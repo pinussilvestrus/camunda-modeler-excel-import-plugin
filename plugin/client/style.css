@@ -15,3 +15,21 @@
   font-size: 16px;
   margin-left: 6px;
 }
+
+.excel-icon {
+  width: 30px;
+  height: 30px;
+  box-sizing: border-box;
+  border-radius: 3px;
+  padding: 5px;
+  display: box;
+  border: solid 1px transparent;
+  background: transparent;
+  vertical-align: middle;
+  margin: 2px 4px;
+}
+
+.excel-icon:hover {
+  background: #f8f8f8;
+  border: solid 1px #cccccc;
+}

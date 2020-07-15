@@ -18,6 +18,10 @@ module.exports = {
             presets: ['@babel/preset-react']
           }
         }
+      },
+      {
+        test: /\.svg$/,
+        use: 'react-svg-loader'
       }
     ]
   },
