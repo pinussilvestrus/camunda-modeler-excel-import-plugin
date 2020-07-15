@@ -1,0 +1,17 @@
+#uploadForm * {
+  font-size: 16px;
+}
+
+#uploadForm button {
+  margin-left: 6px;
+}
+
+#uploadFormButtons {
+  display: flex;
+  justify-content: flex-end;
+}
+
+#uploadFormButtons button {
+  font-size: 16px;
+  margin-left: 6px;
+}
