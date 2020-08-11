@@ -5,7 +5,7 @@
 
 ## Installation
 
-Start Excel transformation service
+Start Excel transformation service (depending on [`camunda-dmn-xlsx`](https://github.com/camunda/camunda-dmn-xlsx)).
 
 ```sh
 $ cd api
