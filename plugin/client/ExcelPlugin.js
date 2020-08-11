@@ -14,7 +14,7 @@ const defaultState = {
   outputFile: '~/Desktop/file.dmn'
 };
 
-const API_URL = "http://localhost:3000/";
+const API_URL = 'http://localhost:3000/';
 
 export default class ExcelPlugin extends PureComponent {
   constructor(props) {
@@ -57,12 +57,12 @@ export default class ExcelPlugin extends PureComponent {
         },
         body: JSON.stringify(importDetails)
       });
-      
-      if(response.ok) {
+
+      if (response.ok) {
         await triggerAction('open-diagram');
       }
 
-    } catch(error) {
+    } catch (error) {
       this.handleImportError(error);
     }
   }
@@ -70,7 +70,7 @@ export default class ExcelPlugin extends PureComponent {
   handleConfigClosed(importDetails) {
     this.setState({ modalOpen: false });
 
-    if(!importDetails) {
+    if (!importDetails) {
       return;
     }
 

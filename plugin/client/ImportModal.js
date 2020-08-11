@@ -15,12 +15,12 @@ export default function ImportModal({ initValues, onClose }) {
   const [ outputFile, setOutputFile ] = useState(initValues.outputFile);
 
 
-  const onSubmit = () => onClose({ 
+  const onSubmit = () => onClose({
     inputColumns,
     outputColumns,
     inputFile,
     outputFile
-   });
+  });
 
   // we can use the built-in styles, e.g. by adding "btn btn-primary" class names
   return <Modal onClose={ onClose }>
@@ -39,7 +39,7 @@ export default function ImportModal({ initValues, onClose }) {
                 id="inputFile"
                 className="form-control"
                 name="inputFile"
-                value={inputFile}
+                value={ inputFile }
                 onChange={ event => setInputFile(event.target.value) }
               />
             </div>
@@ -51,7 +51,7 @@ export default function ImportModal({ initValues, onClose }) {
                 id="inputColumns"
                 className="form-control"
                 name="inputColumns"
-                value={inputColumns}
+                value={ inputColumns }
                 onChange={ event => setInputColumns(event.target.value) }
               />
             </div>
@@ -63,7 +63,7 @@ export default function ImportModal({ initValues, onClose }) {
                 id="outputColumns"
                 className="form-control"
                 name="outputColumns"
-                value={outputColumns}
+                value={ outputColumns }
                 onChange={ event => setOutputColumns(event.target.value) }
               />
             </div>
@@ -75,7 +75,7 @@ export default function ImportModal({ initValues, onClose }) {
                 id="outputFile"
                 className="form-control"
                 name="outputFile"
-                value={outputFile}
+                value={ outputFile }
                 onChange={ event => setOutputFile(event.target.value) }
               />
             </div>
