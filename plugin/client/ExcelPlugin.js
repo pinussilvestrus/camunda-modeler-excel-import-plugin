@@ -8,6 +8,8 @@ import Icon from '../resources/file-excel.svg';
 
 import HIT_POLICIES from './helper/hitPolicies';
 
+import Converter from '../../converter';
+
 const defaultState = {
   configOpen: false,
   inputColumns: 'A,B',
@@ -83,9 +85,16 @@ export default class ExcelPlugin extends PureComponent {
     return convertedFile.contents;
   }
 
-  // todo(pinussilvestrus): implement me
   async convertXlsx(options) {
-    return '';
+    const {
+      buffer
+    } = options;
+
+    const xml = Converter.convertXmlToDmn({
+      buffer
+    });
+
+    return xml;
   }
 
   async importExcelSheet(options) {
@@ -110,22 +119,18 @@ export default class ExcelPlugin extends PureComponent {
       };
 
       // (1) get excel sheet contents
-      const excelSheet = await fileSystem.readFile(inputFile.path, {
-        encoding: ENCODING_UTF8
-      });
+      const excelSheet = await fileSystem.readFile(inputFile.path);
 
       const {
         contents
       } = excelSheet;
 
+      // todo(pinussilvestrus): currently relies on dirty hack inside the app by not forcing an encoding
+      // that's because Buffer.from crashes the file contents, have to deal with it
       const buffer = toBuffer(contents);
 
       // (2) convert to DMN 1.3
-
-      // todo(pinussilvestrus): use new node module
-      // const xml = await this.convertXlsx(options);
-
-      const xml = await this.convertXlsxFromApi(options);
+      const xml = await this.convertXlsx({ buffer: contents });
 
       return await this.handleFileImportSuccess(xml);
 
@@ -200,7 +205,7 @@ const createOutputPath = (details) => {
 };
 
 const toBuffer = (contents) => {
-  return Buffer.from(contents, ENCODING_UTF8);
+  return Buffer.from(contents);
 };
 
 const toHitPolicy = (rawValue) => {

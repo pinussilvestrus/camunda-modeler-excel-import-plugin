@@ -107,3 +107,5 @@ dist
 *.xlsx
 *.dmn
 !example.xlsx
+
+.vscode

@@ -8,7 +8,7 @@ const rule = require('./domain/rule')
 const dmnContent = require('./domain/dmnContents')
 
 exports.getDmnContent = (buffer, amountOutputs = 1) => {
-    const excelSheet = xlsx.parse(buffer);
+    const excelSheet = xlsx.parse(buffer, { type: 'buffer' })[0];
     const header = excelSheet.data[0];
     const rawInputData = excelSheet.data[0].slice(0, header.length - amountOutputs);
     const rawOutputData = excelSheet.data[0].slice(header.length - amountOutputs);
