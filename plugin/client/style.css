@@ -1,19 +1,41 @@
-#uploadForm * {
+.import-form * {
   font-size: 16px;
 }
 
-#uploadForm button {
+.import-form input:disabled {
+  color: var(--color-cccccc) !important;
+}
+
+.import-form input:disabled:hover {
+  cursor: not-allowed;
+}
+
+.import-form #outputDirectory {
+  display: none;
+}
+
+.import-form #inputFile {
+  display: none;
+}
+
+.import-form .file-input .btn {
+  font-size: 12px;
+  font-weight: normal;
+}
+
+.import-form .file-input p {
+  display: inline-block;
+  margin-left: 12px;
+}
+
+.import-buttons button {
+  font-size: 16px;
   margin-left: 6px;
 }
 
-#uploadFormButtons {
+.import-buttons {
   display: flex;
   justify-content: flex-end;
-}
-
-#uploadFormButtons button {
-  font-size: 16px;
-  margin-left: 6px;
 }
 
 .excel-icon {
@@ -22,7 +44,6 @@
   box-sizing: border-box;
   border-radius: 3px;
   padding: 5px;
-  display: box;
   border: solid 1px transparent;
   background: transparent;
   vertical-align: middle;

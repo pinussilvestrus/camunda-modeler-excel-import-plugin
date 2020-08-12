@@ -7,41 +7,130 @@ const Title = Modal.Title || (({ children }) => <h2>{ children }</h2>);
 const Body = Modal.Body || (({ children }) => <div>{ children }</div>);
 const Footer = Modal.Footer || (({ children }) => <div>{ children }</div>);
 
+const path = require('path');
+
 export default function ImportModal({ initValues, onClose }) {
 
   const [ inputColumns, setInputColumns ] = useState(initValues.inputColumns);
   const [ outputColumns, setOutputColumns ] = useState(initValues.outputColumns);
   const [ inputFile, setInputFile ] = useState(initValues.inputFile);
-  const [ outputFile, setOutputFile ] = useState(initValues.outputFile);
+  const [ outputDirectory, setOutputDirectory ] = useState(initValues.outputDirectory);
+  const [ tableName, setTableName ] = useState(initValues.tableName);
 
+  const [ chosenDirectoryText, setChosenDirectoryText ] = useState('No directory selected.');
+  const [ chosenFileText, setChosenFileText ] = useState('No file selected.');
 
-  const onSubmit = () => onClose({
+  const handleInputFileChange = (event) => {
+    const file = event.target.files[0];
+
+    if (!file) {
+      return;
+    }
+
+    setTableName(getFileNameWithoutExtension(file));
+    setInputFile(file);
+    setChosenFileText(file.name);
+  };
+
+  const handleOutputDirectoryChange = (event) => {
+    const file = event.target.files[0];
+
+    if (!file) {
+      return;
+    }
+
+    const directory = getDirectory(file);
+    setOutputDirectory(directory);
+    setChosenDirectoryText(directory);
+  };
+
+  const handleInputFileClick = (event) => {
+    const realInput = document.getElementById('inputFile');
+    realInput.click();
+  };
+
+  const handleDirectoryClick = (event) => {
+    const realInput = document.getElementById('outputDirectory');
+    realInput.click();
+  };
+
+  const handleSubmit = () => onClose({
     inputColumns,
     outputColumns,
     inputFile,
-    outputFile
+    outputDirectory,
+    tableName
   });
 
-  // we can use the built-in styles, e.g. by adding "btn btn-primary" class names
   return <Modal onClose={ onClose }>
     <Title>
       Import Excel Sheet (.xlsx)
     </Title>
 
     <Body>
-      <form id="importForm" onSubmit={ onSubmit }>
+      <form id="import-form" className="import-form" onSubmit={ handleSubmit }>
         <fieldset>
           <div className="fields">
             <div className="form-group">
-              <label>Input File Path</label>
+              <div className="file-input">
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={ handleInputFileClick }>Select .xlsx file</button>
+                <p>{chosenFileText}</p>
+              </div>
+
               <input
-                type="text"
+                type="file"
                 id="inputFile"
+                accept="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                 className="form-control"
                 name="inputFile"
-                value={ inputFile }
-                onChange={ event => setInputFile(event.target.value) }
+                onChange={ handleInputFileChange }
               />
+            </div>
+
+            { false &&
+              <div className="form-group">
+                <div className="file-input">
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={ handleDirectoryClick }>Select output directory</button>
+                  <p>{chosenDirectoryText}</p>
+                </div>
+
+                <input
+                  type="file"
+                  directory="true"
+                  allowdirs="true"
+                  webkitdirectory="true"
+                  id="outputDirectory"
+                  className="form-control"
+                  name="outputDirectory"
+                  onChange={ handleOutputDirectoryChange }
+                />
+              </div>
+            }
+          </div>
+
+        </fieldset>
+
+        <fieldset>
+
+          <legend>Decision Table Details</legend>
+
+          <div className="fields">
+
+            <div className="form-group">
+              <label>Decision Table Name</label>
+              <input
+                type="text"
+                id="tableName"
+                className="form-control"
+                name="tableName"
+                value={ tableName }
+                onChange={ event => setTableName(event.target.value) } />
             </div>
 
             <div className="form-group">
@@ -68,28 +157,27 @@ export default function ImportModal({ initValues, onClose }) {
               />
             </div>
 
-            <div className="form-group">
-              <label>Output File Path</label>
-              <input
-                type="text"
-                id="outputFile"
-                className="form-control"
-                name="outputFile"
-                value={ outputFile }
-                onChange={ event => setOutputFile(event.target.value) }
-              />
-            </div>
           </div>
         </fieldset>
       </form>
     </Body>
 
     <Footer>
-      <div id="importFormButtons">
-        <button type="submit" class="btn btn-primary" form="importForm">Import</button>
-        <button type="button" class="btn btn-secondary" onClick={ () => onClose() }>Cancel</button>
+      <div className="import-buttons">
+        <button type="submit" className="btn btn-primary" form="import-form">Import</button>
+        <button type="button" className="btn btn-secondary" onClick={ () => onClose() }>Cancel</button>
       </div>
     </Footer>
   </Modal>;
 }
 
+
+// helpers ////////////////////////
+
+const getFileNameWithoutExtension = (file) => {
+  return path.basename(file.path, '.xlsx');
+};
+
+const getDirectory = (file) => {
+  return path.dirname(file.path) + '/';
+};

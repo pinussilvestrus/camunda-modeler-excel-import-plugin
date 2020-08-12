@@ -10,11 +10,14 @@ const defaultState = {
   configOpen: false,
   inputColumns: 'A,B',
   outputColumns: 'C',
-  inputFile: '~/pet-projects/excel-to-dmn-plugin/example.xlsx',
-  outputFile: '~/Desktop/file.dmn'
+  inputFile: '',
+  outputDirectory: '/Users/niklas.kiefer/Desktop',
+  tableName: 'default'
 };
 
 const API_URL = 'http://localhost:3000/';
+
+const ENCODING_UTF8 = 'utf8';
 
 export default class ExcelPlugin extends PureComponent {
   constructor(props) {
@@ -44,23 +47,75 @@ export default class ExcelPlugin extends PureComponent {
     });
   }
 
-  async importExcelSheet(importDetails) {
+  async handleFileImportSuccess(xml) {
     const {
       triggerAction
     } = this.props;
 
+    return await triggerAction('create-dmn-diagram', {
+      contents: xml
+    });
+  }
+
+  /** @deprecated */
+  async convertXlsxFromApi(options) {
+    const {
+      fileSystem
+    } = this.props;
+
+    const response = await fetch(API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: createImportRequestBody(options)
+    });
+
+    if (!response.ok) {
+      throw new Error(response.statusText);
+    }
+
+    const convertedFile = await fileSystem.readFile(createOutputPath(options));
+
+    return convertedFile.contents;
+  }
+
+  // todo(pinussilvestrus): implement me
+  async convertXlsx(options) {
+    return '';
+  }
+
+  async importExcelSheet(options) {
+
+    const {
+      fileSystem
+    } = this.props;
+
+    const {
+      inputFile
+    } = options;
+
     try {
-      const response = await fetch(API_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(importDetails)
+
+      // (1) get excel sheet contents
+      const excelSheet = await fileSystem.readFile(inputFile.path, {
+        encoding: ENCODING_UTF8
       });
 
-      if (response.ok) {
-        await triggerAction('open-diagram');
-      }
+      const {
+        contents
+      } = excelSheet;
+
+      const buffer = toBuffer(contents);
+
+      // (2) convert to DMN 1.3
+
+      // todo(pinussilvestrus): use new node module
+      // const xml = await this.convertXlsx(options);
+
+      const xml = await this.convertXlsxFromApi(options);
+
+      return await this.handleFileImportSuccess(xml);
 
     } catch (error) {
       this.handleImportError(error);
@@ -80,16 +135,18 @@ export default class ExcelPlugin extends PureComponent {
   render() {
     const {
       inputFile,
-      outputFile,
+      outputDirectory,
       inputColumns,
-      outputColumns
+      outputColumns,
+      tableName
     } = this.state;
 
     const initValues = {
       inputColumns,
       outputColumns,
       inputFile,
-      outputFile
+      outputDirectory,
+      tableName
     };
 
     return <Fragment>
@@ -105,3 +162,23 @@ export default class ExcelPlugin extends PureComponent {
     </Fragment>;
   }
 }
+
+
+// helpers ////////////////
+
+const createImportRequestBody = (details) => {
+  return JSON.stringify({
+    inputColumns: details.inputColumns,
+    outputColumns: details.outputColumns,
+    inputFile: details.inputFile.path,
+    outputFile: createOutputPath(details)
+  });
+};
+
+const createOutputPath = (details) => {
+  return details.outputDirectory + details.tableName + '.dmn';
+};
+
+const toBuffer = (contents) => {
+  return Buffer.from(contents, ENCODING_UTF8);
+};
