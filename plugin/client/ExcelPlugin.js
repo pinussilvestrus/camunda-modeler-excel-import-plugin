@@ -14,7 +14,7 @@ const defaultState = {
   inputColumns: 'A,B',
   outputColumns: 'C',
   inputFile: '',
-  outputDirectory: '/Users/niklas.kiefer/Desktop',
+  outputDirectory: '/Users/niklas.kiefer/Desktop/',
   hitPolicy: 'Unique',
   tableName: 'default'
 };
