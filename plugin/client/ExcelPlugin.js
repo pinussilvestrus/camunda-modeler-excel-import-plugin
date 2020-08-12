@@ -57,9 +57,16 @@ export default class ExcelPlugin extends PureComponent {
       triggerAction
     } = this.props;
 
-    return await triggerAction('create-dmn-diagram', {
+    const tab = await triggerAction('create-dmn-diagram', {
       contents: xml
     });
+
+    // wait a bit for editor to be loaded
+    setTimeout(function() {
+      triggerAction('save-tab', {
+        tab
+      });
+    }, 500);
   }
 
   /** @deprecated */
@@ -80,7 +87,9 @@ export default class ExcelPlugin extends PureComponent {
       throw new Error(response.statusText);
     }
 
-    const convertedFile = await fileSystem.readFile(createOutputPath(options));
+    const convertedFile = await fileSystem.readFile(createOutputPath(options), {
+      encoding: ENCODING_UTF8
+    });
 
     return convertedFile.contents;
   }
@@ -130,6 +139,7 @@ export default class ExcelPlugin extends PureComponent {
       const buffer = toBuffer(contents);
 
       // (2) convert to DMN 1.3
+      // const xml2 = await this.convertXlsxFromApi(options);
       const xml = await this.convertXlsx({ buffer: contents });
 
       return await this.handleFileImportSuccess(xml);
