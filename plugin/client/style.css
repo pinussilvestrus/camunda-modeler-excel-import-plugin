@@ -2,12 +2,33 @@
   font-size: 16px;
 }
 
+.import-form fieldset {
+  margin: 0;
+}
+
 .import-form input:disabled {
   color: var(--color-cccccc) !important;
 }
 
 .import-form input:disabled:hover {
   cursor: not-allowed;
+}
+
+.import-form select {
+  border-radius: 3px;
+  border: solid 1px var(--silver-darken-80);
+  background-color: var(--color-ffffff);
+  width: 556px;
+  height: 30px;
+  font-size: 13px;
+  padding-left: 8px;
+  color: var(--grey-darken-30);
+  font-weight: normal;
+  font-stretch: normal;
+  font-style: normal;
+  line-height: normal;
+  letter-spacing: normal;
+  float: left;
 }
 
 .import-form #outputDirectory {

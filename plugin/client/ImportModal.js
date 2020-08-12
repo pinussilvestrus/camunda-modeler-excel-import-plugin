@@ -16,6 +16,7 @@ export default function ImportModal({ initValues, onClose }) {
   const [ inputFile, setInputFile ] = useState(initValues.inputFile);
   const [ outputDirectory, setOutputDirectory ] = useState(initValues.outputDirectory);
   const [ tableName, setTableName ] = useState(initValues.tableName);
+  const [ hitPolicy, setHitPolicy ] = useState(initValues.hitPolicy);
 
   const [ chosenDirectoryText, setChosenDirectoryText ] = useState('No directory selected.');
   const [ chosenFileText, setChosenFileText ] = useState('No file selected.');
@@ -59,7 +60,8 @@ export default function ImportModal({ initValues, onClose }) {
     outputColumns,
     inputFile,
     outputDirectory,
-    tableName
+    tableName,
+    hitPolicy
   });
 
   return <Modal onClose={ onClose }>
@@ -155,6 +157,28 @@ export default function ImportModal({ initValues, onClose }) {
                 value={ outputColumns }
                 onChange={ event => setOutputColumns(event.target.value) }
               />
+            </div>
+
+            <div className="form-group">
+              <label>Hit Policy</label>
+              <select
+                id="hitPolicy"
+                className="form-control"
+                name="hitPolicy"
+                value={ hitPolicy }
+                onChange={ event => setHitPolicy(event.target.value) }>
+                <option>Unique</option>
+                <option>First</option>
+                <option>Priority</option>
+                <option>Any</option>
+                <option>Collect</option>
+                <option>Collect (Sum)</option>
+                <option>Collect (Min)</option>
+                <option>Collect (Max)</option>
+                <option>Collect (Count)</option>
+                <option>Rule order</option>
+                <option>Output order</option>
+              </select>
             </div>
 
           </div>

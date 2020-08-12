@@ -6,12 +6,16 @@ import ImportModal from './ImportModal';
 
 import Icon from '../resources/file-excel.svg';
 
+import HIT_POLICIES from './helper/hitPolicies';
+import hitPolicies from './helper/hitPolicies';
+
 const defaultState = {
   configOpen: false,
   inputColumns: 'A,B',
   outputColumns: 'C',
   inputFile: '',
   outputDirectory: '/Users/niklas.kiefer/Desktop',
+  hitPolicy: 'Unique',
   tableName: 'default'
 };
 
@@ -92,10 +96,19 @@ export default class ExcelPlugin extends PureComponent {
     } = this.props;
 
     const {
-      inputFile
+      inputFile,
+      hitPolicy
     } = options;
 
     try {
+
+      // (0) get correct hit policy (and aggregation)
+      const hitPolicyDetails = toHitPolicy(hitPolicy);
+
+      options = {
+        ...options,
+        ...hitPolicyDetails
+      };
 
       // (1) get excel sheet contents
       const excelSheet = await fileSystem.readFile(inputFile.path, {
@@ -138,7 +151,8 @@ export default class ExcelPlugin extends PureComponent {
       outputDirectory,
       inputColumns,
       outputColumns,
-      tableName
+      tableName,
+      hitPolicy
     } = this.state;
 
     const initValues = {
@@ -146,7 +160,8 @@ export default class ExcelPlugin extends PureComponent {
       outputColumns,
       inputFile,
       outputDirectory,
-      tableName
+      tableName,
+      hitPolicy
     };
 
     return <Fragment>
@@ -187,4 +202,8 @@ const createOutputPath = (details) => {
 
 const toBuffer = (contents) => {
   return Buffer.from(contents, ENCODING_UTF8);
+};
+
+const toHitPolicy = (rawValue) => {
+  return hitPolicies[rawValue];
 };
