@@ -1,0 +1,16 @@
+{
+  "name": "excel-to-dmn-converter",
+  "version": "1.0.0",
+  "description": "Converts excel files to DMN.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Felix Anhalt",
+  "license": "ISC",
+  "dependencies": {
+    "xmlbuilder": "^15.1.1",
+    "node-xlsx": "^0.15.0",
+    "eslint": "^7.6.0"
+  }
+}
