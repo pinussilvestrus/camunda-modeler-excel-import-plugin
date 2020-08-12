@@ -150,8 +150,14 @@ export default class ExcelPlugin extends PureComponent {
     };
 
     return <Fragment>
-      <Fill slot="toolbar" group="9_excel">
-        <Icon className="excel-icon" onClick={ () => this.setState({ modalOpen: true }) } />
+      <Fill slot="toolbar" group="1_general">
+        <button
+          title="Open excel sheet"
+          className="excel-icon"
+          onClick={ () => this.setState({ modalOpen: true }) }
+        >
+          <Icon />
+        </button>
       </Fill>
       { this.state.modalOpen && (
         <ImportModal
