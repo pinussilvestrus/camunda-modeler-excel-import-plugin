@@ -7,7 +7,6 @@ import ImportModal from './ImportModal';
 import Icon from '../resources/file-excel.svg';
 
 import HIT_POLICIES from './helper/hitPolicies';
-import hitPolicies from './helper/hitPolicies';
 
 const defaultState = {
   configOpen: false,
@@ -205,5 +204,5 @@ const toBuffer = (contents) => {
 };
 
 const toHitPolicy = (rawValue) => {
-  return hitPolicies[rawValue];
+  return HIT_POLICIES[rawValue];
 };
