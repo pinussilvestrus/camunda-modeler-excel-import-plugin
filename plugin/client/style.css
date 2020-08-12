@@ -44,6 +44,10 @@
   font-weight: normal;
 }
 
+.import-form .file-input .btn:focus {
+  outline: none;
+}
+
 .import-form .file-input p {
   display: inline-block;
   margin-left: 12px;
