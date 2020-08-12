@@ -21,6 +21,14 @@ export default function ImportModal({ initValues, onClose }) {
   const [ chosenDirectoryText, setChosenDirectoryText ] = useState('No directory selected.');
   const [ chosenFileText, setChosenFileText ] = useState('No file selected.');
 
+  const isValid = () => {
+    return inputColumns.length &&
+      outputColumns.length &&
+      !!inputFile &&
+      !!tableName &&
+      !!hitPolicy;
+  };
+
   const handleInputFileChange = (event) => {
     const file = event.target.files[0];
 
@@ -188,8 +196,15 @@ export default function ImportModal({ initValues, onClose }) {
 
     <Footer>
       <div className="import-buttons">
-        <button type="submit" className="btn btn-primary" form="import-form">Import</button>
-        <button type="button" className="btn btn-secondary" onClick={ () => onClose() }>Cancel</button>
+        <button
+          type="submit"
+          className="btn btn-primary"
+          disabled={ !isValid() }
+          form="import-form">Import</button>
+        <button
+          type="button"
+          className="btn btn-secondary"
+          onClick={ () => onClose() }>Cancel</button>
       </div>
     </Footer>
   </Modal>;
