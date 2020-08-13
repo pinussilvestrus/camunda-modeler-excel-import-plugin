@@ -128,15 +128,14 @@ export default class ExcelPlugin extends PureComponent {
       };
 
       // (1) get excel sheet contents
-      const excelSheet = await fileSystem.readFile(inputFile.path);
+      const excelSheet = await fileSystem.readFile(inputFile.path, {
+        encoding: 'null',
+        asBuffer: true
+      });
 
       const {
         contents
       } = excelSheet;
-
-      // todo(pinussilvestrus): currently relies on dirty hack inside the app by not forcing an encoding
-      // that's because Buffer.from crashes the file contents, have to deal with it
-      const buffer = toBuffer(contents);
 
       // (2) convert to DMN 1.3
       // const xml2 = await this.convertXlsxFromApi(options);
@@ -212,10 +211,6 @@ const createImportRequestBody = (details) => {
 
 const createOutputPath = (details) => {
   return details.outputDirectory + details.tableName + '.dmn';
-};
-
-const toBuffer = (contents) => {
-  return Buffer.from(contents);
 };
 
 const toHitPolicy = (rawValue) => {
