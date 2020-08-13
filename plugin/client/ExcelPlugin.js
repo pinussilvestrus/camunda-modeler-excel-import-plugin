@@ -73,8 +73,10 @@ export default class ExcelPlugin extends PureComponent {
   /** @deprecated */
   async convertXlsxFromApi(options) {
     const {
-      fileSystem
+      _getGlobal
     } = this.props;
+
+    const fileSystem = _getGlobal('fileSystem');
 
     const response = await fetch(API_URL, {
       method: 'POST',
@@ -116,10 +118,11 @@ export default class ExcelPlugin extends PureComponent {
   }
 
   async importExcelSheet(options) {
-
     const {
-      fileSystem
+      _getGlobal
     } = this.props;
+
+    const fileSystem = _getGlobal('fileSystem');
 
     const {
       inputFile,
