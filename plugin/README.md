@@ -1,8 +1,7 @@
 # camunda-modeler-excel-import-plugin
 
-[![Compatible with Camunda Modeler version 3.4](https://img.shields.io/badge/Camunda%20Modeler-3.4+-blue.svg)](https://github.com/camunda/camunda-modeler)
+[![Compatible with Camunda Modeler Branch hackdays-excel-plugin](https://img.shields.io/badge/Camunda%20Modeler-dev-blue.svg)](https://github.com/camunda/camunda-modeler)
 
-WIP
 
 ## How to use
 
@@ -34,7 +33,7 @@ $ npm run all
 
 ## Compatibility Notice
 
-This plug-in is compatible with Camunda Modeler `v3.4+`.
+This plug-in is currently only compatible with Camunda Modeler branch `hackdays-excel-plugin`.
 
 ## Resources
 
