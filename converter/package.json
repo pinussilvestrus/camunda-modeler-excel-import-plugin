@@ -4,7 +4,7 @@
   "description": "Converts excel files to DMN.",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "mocha"
   },
   "author": "Felix Anhalt",
   "license": "ISC",
@@ -12,5 +12,9 @@
     "xmlbuilder": "^15.1.1",
     "node-xlsx": "^0.15.0",
     "eslint": "^7.6.0"
+  },
+  "devDependencies": {
+    "mocha": "^8.1.1",
+    "chai": "^4.2.0"
   }
 }

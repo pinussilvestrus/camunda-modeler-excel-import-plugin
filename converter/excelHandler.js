@@ -46,7 +46,6 @@ const getRules = (rows, amountOutputs, headerLength) => {
                             inputEntries: getEntries(row.slice(0, headerLength - amountOutputs), index, "InputEntry"),
                             outputEntries: getEntries(row.slice(headerLength - amountOutputs, headerLength), index, "OutputEntry")
                         }
-                        
         return rule.rule(ruleData.id, ruleData.description, ruleData.inputEntries, ruleData.outputEntries);
     });
 }
