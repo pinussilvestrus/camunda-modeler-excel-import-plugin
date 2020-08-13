@@ -37667,6 +37667,134 @@ var XLS = XLSX, ODS = XLSX;
 
 /***/ }),
 
+/***/ "./client/Dropzone.js":
+/*!****************************!*\
+  !*** ./client/Dropzone.js ***!
+  \****************************/
+/*! exports provided: default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "default", function() { return DropZone; });
+/* harmony import */ var camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! camunda-modeler-plugin-helpers/react */ "./node_modules/camunda-modeler-plugin-helpers/react.js");
+/* harmony import */ var camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0__);
+
+class DropZone extends camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default.a.PureComponent {
+  constructor(props) {
+    super(props);
+    this.state = {
+      draggingOver: false
+    };
+  }
+
+  handleDragOver(event) {
+    if (!this.isDragAllowed(event)) {
+      return;
+    }
+
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'copy';
+
+    if (this.state.draggingOver) {
+      return;
+    }
+
+    event.stopPropagation();
+    this.setState({
+      draggingOver: true
+    });
+  }
+  /**
+   * @param {DragEvent} event
+   */
+
+
+  isDragAllowed(event) {
+    const {
+      dataTransfer
+    } = event;
+    const {
+      items
+    } = dataTransfer;
+
+    if (items.length != 1) {
+      return false;
+    }
+
+    return isDropableItem(items[0]);
+  }
+
+  handleDragLeave(event) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    if (this.state.draggingOver && !event.relatedTarget) {
+      this.setState({
+        draggingOver: false
+      });
+    }
+  }
+
+  handleDrop(event) {
+    if (!this.state.draggingOver) {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+    this.setState({
+      draggingOver: false
+    });
+    this.props.onDrop(event.dataTransfer.files);
+  }
+
+  render() {
+    return /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", {
+      className: "plugin-dropzone",
+      onDragOver: this.handleDragOver.bind(this),
+      onDragLeave: this.handleDragLeave.bind(this),
+      onDrop: this.handleDrop.bind(this)
+    }, this.state.draggingOver ? /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(DropOverlay, null) : null, this.props.children);
+  }
+
+}
+DropZone.defaultProps = {
+  onDrop: () => {}
+};
+
+function DropOverlay() {
+  return /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", {
+    className: "plugin-dropzone-overlay"
+  }, /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", {
+    className: "box"
+  }, /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", null, "Drop Excel sheet here")));
+} // helpers /////////////////////
+
+/**
+ * Checks for droppable items, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.
+ *
+ * @param {Object} item - Item to be dropped.
+ *
+ * @returns {boolean}
+ */
+
+
+function isDropableItem(item) {
+  const {
+    kind,
+    type
+  } = item;
+
+  if (kind !== 'file') {
+    return false;
+  }
+
+  return type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+}
+
+/***/ }),
+
 /***/ "./client/ExcelPlugin.js":
 /*!*******************************!*\
   !*** ./client/ExcelPlugin.js ***!
@@ -37913,6 +38041,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! camunda-modeler-plugin-helpers/react */ "./node_modules/camunda-modeler-plugin-helpers/react.js");
 /* harmony import */ var camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0__);
 /* harmony import */ var camunda_modeler_plugin_helpers_components__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! camunda-modeler-plugin-helpers/components */ "./node_modules/camunda-modeler-plugin-helpers/components.js");
+/* harmony import */ var _Dropzone__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./Dropzone */ "./client/Dropzone.js");
 /* eslint-disable no-unused-vars */
 
  // polyfill upcoming structural components
@@ -37928,6 +38057,8 @@ const Body = camunda_modeler_plugin_helpers_components__WEBPACK_IMPORTED_MODULE_
 const Footer = camunda_modeler_plugin_helpers_components__WEBPACK_IMPORTED_MODULE_1__["Modal"].Footer || (({
   children
 }) => /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", null, children));
+
+
 
 const path = __webpack_require__(/*! path */ "./node_modules/path-browserify/index.js");
 
@@ -37969,8 +38100,22 @@ function ImportModal({
     hitPolicy
   });
 
+  const handleDrop = (files = []) => {
+    if (!files.length) {
+      return;
+    }
+
+    handleInputFileChange({
+      target: {
+        files
+      }
+    });
+  };
+
   return /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(camunda_modeler_plugin_helpers_components__WEBPACK_IMPORTED_MODULE_1__["Modal"], {
     onClose: onClose
+  }, /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(_Dropzone__WEBPACK_IMPORTED_MODULE_2__["default"], {
+    onDrop: handleDrop
   }, /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(Title, null, "Import Excel Sheet (.xlsx)"), /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(Body, null, /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("form", {
     id: "import-form",
     className: "import-form",
@@ -38032,7 +38177,7 @@ function ImportModal({
     type: "button",
     className: "btn btn-secondary",
     onClick: () => onClose()
-  }, "Cancel"))));
+  }, "Cancel")))));
 } // helpers ////////////////////////
 
 const getFileNameWithoutExtension = file => {

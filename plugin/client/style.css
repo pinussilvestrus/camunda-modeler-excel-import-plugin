@@ -87,3 +87,35 @@
   text-align: center;
   padding-top: 3px;
 }
+
+.plugin-dropzone {
+  height: 100%;
+  width: 100%;
+}
+
+.plugin-dropzone-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  right: 0;
+  padding: 120px 50px;
+  background: var(--color-ffffff-opacity-80);
+  pointer-events: none;
+  z-index: 1000;
+}
+
+.plugin-dropzone-overlay .box {
+  text-align: center;
+  border: dashed 4px var(--color-dddddd);
+  height: 100%;
+  vertical-align: middle;
+}
+
+.plugin-dropzone-overlay .box > div {
+  font-size: 26px;
+  color: var(--color-999999);
+  margin: auto;
+  top: 45%;
+  position: relative;
+}
