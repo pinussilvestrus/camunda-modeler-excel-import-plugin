@@ -25,13 +25,23 @@ const API_URL = 'http://localhost:3000/';
 
 const ENCODING_UTF8 = 'utf8';
 
+const PLUGIN_EVENT = 'excel-import-plugin:import';
+
 export default class ExcelPlugin extends PureComponent {
   constructor(props) {
     super(props);
 
     this.state = defaultState;
+  }
 
-    this.handleConfigClosed = this.handleConfigClosed.bind(this);
+  componentDidMount() {
+    const {
+      subscribe
+    } = this.props;
+
+    subscribe(PLUGIN_EVENT, () => {
+      this.openModal();
+    });
   }
 
   handleImportError(error) {
@@ -174,6 +184,10 @@ export default class ExcelPlugin extends PureComponent {
     this.importExcelSheet(importDetails);
   }
 
+  openModal() {
+    this.setState({ modalOpen: true });
+  }
+
   render() {
     const {
       inputFile,
@@ -194,14 +208,14 @@ export default class ExcelPlugin extends PureComponent {
         <button
           title="Open excel sheet"
           className="excel-icon"
-          onClick={ () => this.setState({ modalOpen: true }) }
+          onClick={ this.openModal.bind(this) }
         >
           <Icon />
         </button>
       </Fill>
       { this.state.modalOpen && (
         <ImportModal
-          onClose={ this.handleConfigClosed }
+          onClose={ this.handleConfigClosed.bind(this) }
           initValues={ initValues }
         />
       )}
