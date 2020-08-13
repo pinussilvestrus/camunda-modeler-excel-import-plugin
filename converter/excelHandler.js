@@ -7,8 +7,8 @@ const output = require('./domain/output')
 const rule = require('./domain/rule')
 const dmnContent = require('./domain/dmnContents')
 
-exports.getDmnContent = (buffer, tableName, amountOutputs = 1, hitPolicy = "UNQIUE", aggregation) => {
-    const excelSheet = xlsx.parse(buffer);
+exports.getDmnContent = ({buffer, tableName, amountOutputs = 1, hitPolicy = "UNQIUE", aggregation}) => {
+    const excelSheet = xlsx.parse(buffer, { type: 'buffer'});
     const header = excelSheet[0].data[0];
     const rawInputData = header.slice(0, header.length - amountOutputs);
     const rawOutputData = header.slice(header.length - amountOutputs);
