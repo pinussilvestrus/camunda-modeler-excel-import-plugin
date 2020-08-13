@@ -11,19 +11,16 @@ const path = require('path');
 
 export default function ImportModal({ initValues, onClose }) {
 
-  const [ inputColumns, setInputColumns ] = useState(initValues.inputColumns);
-  const [ outputColumns, setOutputColumns ] = useState(initValues.outputColumns);
   const [ inputFile, setInputFile ] = useState(initValues.inputFile);
-  const [ outputDirectory, setOutputDirectory ] = useState(initValues.outputDirectory);
+
+  const [ amountOutputs, setAmountOutputs ] = useState(initValues.amountOutputs);
   const [ tableName, setTableName ] = useState(initValues.tableName);
   const [ hitPolicy, setHitPolicy ] = useState(initValues.hitPolicy);
 
-  const [ chosenDirectoryText, setChosenDirectoryText ] = useState('No directory selected.');
   const [ chosenFileText, setChosenFileText ] = useState('No file selected.');
 
   const isValid = () => {
-    return inputColumns.length &&
-      outputColumns.length &&
+    return !!amountOutputs &&
       !!inputFile &&
       !!tableName &&
       !!hitPolicy;
@@ -41,33 +38,14 @@ export default function ImportModal({ initValues, onClose }) {
     setChosenFileText(file.name);
   };
 
-  const handleOutputDirectoryChange = (event) => {
-    const file = event.target.files[0];
-
-    if (!file) {
-      return;
-    }
-
-    const directory = getDirectory(file);
-    setOutputDirectory(directory);
-    setChosenDirectoryText(directory);
-  };
-
   const handleInputFileClick = (event) => {
     const realInput = document.getElementById('inputFile');
     realInput.click();
   };
 
-  const handleDirectoryClick = (event) => {
-    const realInput = document.getElementById('outputDirectory');
-    realInput.click();
-  };
-
   const handleSubmit = () => onClose({
-    inputColumns,
-    outputColumns,
+    amountOutputs,
     inputFile,
-    outputDirectory,
     tableName,
     hitPolicy
   });
@@ -100,28 +78,6 @@ export default function ImportModal({ initValues, onClose }) {
               />
             </div>
 
-            { false &&
-              <div className="form-group">
-                <div className="file-input">
-                  <button
-                    type="button"
-                    className="btn btn-secondary"
-                    onClick={ handleDirectoryClick }>Select output directory</button>
-                  <p>{chosenDirectoryText}</p>
-                </div>
-
-                <input
-                  type="file"
-                  directory="true"
-                  allowdirs="true"
-                  webkitdirectory="true"
-                  id="outputDirectory"
-                  className="form-control"
-                  name="outputDirectory"
-                  onChange={ handleOutputDirectoryChange }
-                />
-              </div>
-            }
           </div>
 
         </fieldset>
@@ -133,37 +89,26 @@ export default function ImportModal({ initValues, onClose }) {
           <div className="fields">
 
             <div className="form-group">
-              <label>Decision Table Name</label>
+              <label>Name</label>
               <input
                 type="text"
                 id="tableName"
                 className="form-control"
                 name="tableName"
+                placeholder="The file name is default."
                 value={ tableName }
                 onChange={ event => setTableName(event.target.value) } />
             </div>
 
             <div className="form-group">
-              <label>Input Columns</label>
+              <label>Amount output columns</label>
               <input
-                type="text"
-                id="inputColumns"
+                type="number"
+                id="amountOutputs"
                 className="form-control"
-                name="inputColumns"
-                value={ inputColumns }
-                onChange={ event => setInputColumns(event.target.value) }
-              />
-            </div>
-
-            <div className="form-group">
-              <label>Output Columns</label>
-              <input
-                type="text"
-                id="outputColumns"
-                className="form-control"
-                name="outputColumns"
-                value={ outputColumns }
-                onChange={ event => setOutputColumns(event.target.value) }
+                name="amountOutputs"
+                value={ amountOutputs }
+                onChange={ event => setAmountOutputs(event.target.value) }
               />
             </div>
 

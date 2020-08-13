@@ -12,12 +12,13 @@ import Converter from '../../converter';
 
 const defaultState = {
   configOpen: false,
-  inputColumns: 'A,B',
-  outputColumns: 'C',
+  amountOutputs: '1',
   inputFile: '',
-  outputDirectory: '/Users/niklas.kiefer/Desktop/',
   hitPolicy: 'Unique',
-  tableName: 'default'
+  tableName: '',
+
+  // @deprecated
+  outputDirectory: '/Users/niklas.kiefer/Desktop/',
 };
 
 const API_URL = 'http://localhost:3000/';
@@ -96,11 +97,19 @@ export default class ExcelPlugin extends PureComponent {
 
   async convertXlsx(options) {
     const {
-      buffer
+      buffer,
+      amountOutputs,
+      tableName,
+      hitPolicy,
+      aggregation
     } = options;
 
     const xml = Converter.convertXmlToDmn({
-      buffer
+      buffer,
+      amountOutputs,
+      tableName,
+      hitPolicy,
+      aggregation
     });
 
     return xml;
@@ -129,7 +138,7 @@ export default class ExcelPlugin extends PureComponent {
 
       // (1) get excel sheet contents
       const excelSheet = await fileSystem.readFile(inputFile.path, {
-        encoding: 'null',
+        encoding: null,
         asBuffer: true
       });
 
@@ -139,8 +148,12 @@ export default class ExcelPlugin extends PureComponent {
 
       // (2) convert to DMN 1.3
       // const xml2 = await this.convertXlsxFromApi(options);
-      const xml = await this.convertXlsx({ buffer: contents });
+      const xml = await this.convertXlsx({
+        buffer: contents,
+        ...options
+      });
 
+      // (3) open and save generated DMN 1.3 file
       return await this.handleFileImportSuccess(xml);
 
     } catch (error) {
@@ -161,18 +174,14 @@ export default class ExcelPlugin extends PureComponent {
   render() {
     const {
       inputFile,
-      outputDirectory,
-      inputColumns,
-      outputColumns,
+      amountOutputs,
       tableName,
       hitPolicy
     } = this.state;
 
     const initValues = {
-      inputColumns,
-      outputColumns,
       inputFile,
-      outputDirectory,
+      amountOutputs,
       tableName,
       hitPolicy
     };
