@@ -7,19 +7,24 @@ const output = require('./domain/output')
 const rule = require('./domain/rule')
 const dmnContent = require('./domain/dmnContents')
 
-exports.getDmnContent = (buffer, amountOutputs = 1) => {
-    const excelSheet = xlsx.parse(buffer, { type: 'buffer' })[0];
-    const header = excelSheet.data[0];
-    const rawInputData = excelSheet.data[0].slice(0, header.length - amountOutputs);
-    const rawOutputData = excelSheet.data[0].slice(header.length - amountOutputs);
-    const safeRuleRows = validateRows(excelSheet.data.slice(1));
+exports.getDmnContent = (buffer, tableName, amountOutputs = 1, hitPolicy = "UNQIUE", aggregation) => {
+    const excelSheet = xlsx.parse(buffer);
+    const header = excelSheet[0].data[0];
+    const rawInputData = header.slice(0, header.length - amountOutputs);
+    const rawOutputData = header.slice(header.length - amountOutputs);
+    const safeRuleRows = validateRows(excelSheet[0].data.slice(1));
+
+    if(!tableName){
+        tableName = excelSheet[0].name;
+    }
     
     return dmnContent.dmnContents({
-        name: excelSheet.name,
-        hitPolicy: "UNIQUE",
+        name: tableName,
+        hitPolicy: hitPolicy,
+        aggregation: aggregation,
         inputs: getInputs(rawInputData),
         outputs: getOutputs(rawOutputData),
-        rules: getRules(safeRuleRows, amountOutputs)
+        rules: getRules(safeRuleRows, amountOutputs, header.length)
        });
 }
 
@@ -34,12 +39,12 @@ const getOutputs = (outputArray) => {
     return outputArray.map((text, index) => output.output(`Output${index}`, text, text));
 }
 
-const getRules = (rows, amountOutputs) => {
+const getRules = (rows, amountOutputs, headerLength) => {
     return rows.map((row, index) => {
         const ruleData = { id: `Rule${index}`,
                             description: row[row.length -1],
-                            inputEntries: getEntries(row.slice(0, row.length - amountOutputs), index, "InputEntry"),
-                            outputEntries: getEntries(row.slice(row.length - amountOutputs), index, "OutputEntry")
+                            inputEntries: getEntries(row.slice(0, headerLength - amountOutputs), index, "InputEntry"),
+                            outputEntries: getEntries(row.slice(headerLength - amountOutputs, headerLength), index, "OutputEntry")
                         }
                         
         return rule.rule(ruleData.id, ruleData.description, ruleData.inputEntries, ruleData.outputEntries);
