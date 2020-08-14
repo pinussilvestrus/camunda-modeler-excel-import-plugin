@@ -25,7 +25,7 @@ const standardExpectedInputs = () => {
         {
             id: 'Input1',
             label: 'invoiceCategory',
-            inputExpression: { id: 'InputExpression1', text: 'invoiceCategory', typeRef: 'string' }
+            inputExpression: { id: 'InputExpression1', text: 'invoiceCategory', typeRef: 'boolean' }
         }
     ]
 }
@@ -48,7 +48,7 @@ const standardExpectedRules = () => {
             description: 'accounting',
             inputEntries: [
                 { id: 'InputEntry00', text: '<= 500' },
-                { id: 'InputEntry01', text: '' }
+                { id: 'InputEntry01', text: 'amount < b' }
             ],
             outputEntries: [{ id: 'OutputEntry00', text: 'accounting' }]
         },
@@ -57,7 +57,7 @@ const standardExpectedRules = () => {
             description: 'anno1',
             inputEntries: [
                 { id: 'InputEntry10', text: '> 800' },
-                { id: 'InputEntry11', text: 'Travel Expenses' }
+                { id: 'InputEntry11', text: 2 }
             ],
             outputEntries: [{ id: 'OutputEntry10', text: 'sales' }]
         },
@@ -66,7 +66,7 @@ const standardExpectedRules = () => {
             description: 'management',
             inputEntries: [
                 { id: 'InputEntry20', text: '> 500' },
-                { id: 'InputEntry21', text: 'Foo' }
+                { id: 'InputEntry21', text: 3.56787 }
             ],
             outputEntries: [{ id: 'OutputEntry20', text: 'management' }]
         }
@@ -131,7 +131,7 @@ describe('excelHandler', function () {
                     id: 'Output0',
                     text: 'invoiceCategory',
                     name: 'invoiceCategory',
-                    typeRef: 'string'
+                    typeRef: 'boolean'
                 },
                 {
                     id: 'Output1',
@@ -140,6 +140,7 @@ describe('excelHandler', function () {
                     typeRef: 'string'
                 }
             ]
+
             expect(dmnContent.outputs).to.eql(expectedOutputs);
 
             const expectedRules = [
@@ -150,7 +151,7 @@ describe('excelHandler', function () {
                         { id: 'InputEntry00', text: '<= 500' }
                     ],
                     outputEntries: [
-                        { id: 'OutputEntry00', text: '' },
+                        { id: 'OutputEntry00', text: 'amount < b' },
                         { id: 'OutputEntry01', text: 'accounting' }
                     ]
                 },
@@ -161,7 +162,7 @@ describe('excelHandler', function () {
                         { id: 'InputEntry10', text: '> 800' }
                     ],
                     outputEntries: [
-                        { id: 'OutputEntry10', text: 'Travel Expenses' },
+                        { id: 'OutputEntry10', text: 2 },
                         { id: 'OutputEntry11', text: 'sales' }
                     ]
                 },
@@ -172,7 +173,7 @@ describe('excelHandler', function () {
                         { id: 'InputEntry20', text: '> 500' }
                     ],
                     outputEntries: [
-                        { id: 'OutputEntry20', text: 'Foo' },
+                        { id: 'OutputEntry20', text: 3.56787 },
                         { id: 'OutputEntry21', text: 'management' }
                     ]
                 }
@@ -198,6 +199,47 @@ describe('excelHandler', function () {
             expectedRules[2].description = "anno2";
 
             expect(dmnContent.rules).to.eql(expectedRules);
+        });
+    });
+
+    describe('#getDmnContent(buffer, tableName, amountOutputs, hitPolicy, aggregation)', function () {
+        it('should return processed dmn content as json with 3 different types', function () {
+            let options = standardOptions();
+            options.buffer = fs.readFileSync('./test/exampleTypes.xlsx');
+            const dmnContent = excelHandler.getDmnContent(options);
+            expect(dmnContent.name).to.be.a('string');
+            expect(dmnContent.name).to.equal(options.tableName);
+            expect(dmnContent.hitPolicy).to.be.a('string');
+            expect(dmnContent.hitPolicy).to.equal(options.hitPolicy);
+
+            const expectedInputs = () => {
+                return [
+                    {
+                        id: 'Input0',
+                        label: 'amount',
+                        inputExpression: { id: 'InputExpression0', text: 'amount', typeRef: 'string' }
+                    },
+                    {
+                        id: 'Input1',
+                        label: 'invoiceCategory',
+                        inputExpression: { id: 'InputExpression1', text: 'invoiceCategory', typeRef: 'double' }
+                    }
+                ]
+            }
+            
+            const expectedOutput = () => {
+                return [
+                    {
+                        id: 'Output0',
+                        text: 'result',
+                        name: 'result',
+                        typeRef: 'integer'
+                    }
+                ]
+            }
+
+            expect(dmnContent.inputs).to.eql(expectedInputs());
+            expect(dmnContent.outputs).to.eql(expectedOutput());
         });
     });
 });

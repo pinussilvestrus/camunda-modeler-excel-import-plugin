@@ -13,6 +13,7 @@ exports.getDmnContent = ({buffer, tableName, amountOutputs = 1, hitPolicy = "UNQ
     const rawInputData = header.slice(0, header.length - amountOutputs);
     const rawOutputData = header.slice(header.length - amountOutputs);
     const safeRuleRows = validateRows(excelSheet[0].data.slice(1));
+    const typeRefs = getTypeRefs(safeRuleRows[0]);
 
     if(!tableName){
         tableName = excelSheet[0].name;
@@ -22,21 +23,21 @@ exports.getDmnContent = ({buffer, tableName, amountOutputs = 1, hitPolicy = "UNQ
         name: tableName,
         hitPolicy: hitPolicy,
         aggregation: aggregation,
-        inputs: getInputs(rawInputData),
-        outputs: getOutputs(rawOutputData),
+        inputs: getInputs(rawInputData, typeRefs),
+        outputs: getOutputs(rawOutputData, typeRefs),
         rules: getRules(safeRuleRows, amountOutputs, header.length)
        });
 }
 
-const getInputs = (inputArray) => {
+const getInputs = (inputArray, typeRefs) => {
     return inputArray.map((text, index) => {
-        const expression = inputExpression.inputExpression(`InputExpression${index}`, text)
+        const expression = inputExpression.inputExpression(`InputExpression${index}`, text, typeRefs[index])
         return input.input(`Input${index}`, text, expression);
     });
 }
 
-const getOutputs = (outputArray) => {
-    return outputArray.map((text, index) => output.output(`Output${index}`, text, text));
+const getOutputs = (outputArray, typeRefs, amountOutputs) => {
+    return outputArray.map((text, index) => output.output(`Output${index}`, text, text, typeRefs[typeRefs.length - outputArray.length + index]));
 }
 
 const getRules = (rows, amountOutputs, headerLength) => {
@@ -64,3 +65,25 @@ const validateRows = (rows) => {
 const getEntries = (row, ruleIndex, rowType) => {
     return row.map((text, entryIndex) => entry.entry(`${rowType}${ruleIndex}${entryIndex}`, text));
 } 
+
+const getTypeRefs = (row) => {
+    return row.map((text) => {
+        if(!text){
+            return "string";
+        }
+
+        if(!isNaN(text)){
+            if(Number.isSafeInteger(text)){
+                return "integer";
+            } else {
+                return "double";
+            }
+        }
+
+        if(!(text.trim().startsWith('<') || text.trim().startsWith('>')) && (text.includes('<') || text.includes('>') || text.includes('&&') || text.includes('||'))){
+            return 'boolean';
+        }
+
+        return 'string';
+    });
+}

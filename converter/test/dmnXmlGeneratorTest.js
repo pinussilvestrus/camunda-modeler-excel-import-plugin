@@ -74,7 +74,7 @@ describe('dmnXmlGenerator', function () {
                     expect.fail(err);
                 }
               });
-        });
+        });  
       });
 
       describe('#buildXmlFromDmnContent(dmnContents)', function () {
