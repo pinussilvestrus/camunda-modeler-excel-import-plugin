@@ -5,7 +5,7 @@
 
 ## How to use
 
-1. Download and copy this repository into the `plugins` directory of the Camunda Modeler
+1. Download and copy this `plugin` subfolder into the `plugins` directory of the Camunda Modeler
 2. Start the Camunda Modeler
 
 Refer to the [plugins documentation](https://github.com/camunda/camunda-modeler/tree/master/docs/plugins#plugging-into-the-camunda-modeler) to get detailed information on how to create and integrate Camunda Modeler plugins.
