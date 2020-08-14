@@ -7,89 +7,175 @@ const Title = Modal.Title || (({ children }) => <h2>{ children }</h2>);
 const Body = Modal.Body || (({ children }) => <div>{ children }</div>);
 const Footer = Modal.Footer || (({ children }) => <div>{ children }</div>);
 
+import Dropzone from './Dropzone';
+
+const path = require('path');
+
 export default function ImportModal({ initValues, onClose }) {
 
-  const [ inputColumns, setInputColumns ] = useState(initValues.inputColumns);
-  const [ outputColumns, setOutputColumns ] = useState(initValues.outputColumns);
   const [ inputFile, setInputFile ] = useState(initValues.inputFile);
-  const [ outputFile, setOutputFile ] = useState(initValues.outputFile);
 
+  const [ amountOutputs, setAmountOutputs ] = useState(initValues.amountOutputs);
+  const [ tableName, setTableName ] = useState(initValues.tableName);
+  const [ hitPolicy, setHitPolicy ] = useState(initValues.hitPolicy);
 
-  const onSubmit = () => onClose({
-    inputColumns,
-    outputColumns,
+  const [ chosenFileText, setChosenFileText ] = useState('No file selected.');
+
+  const isValid = () => {
+    return !!amountOutputs &&
+      !!inputFile &&
+      !!tableName &&
+      !!hitPolicy;
+  };
+
+  const handleInputFileChange = (event) => {
+    const file = event.target.files[0];
+
+    if (!file) {
+      return;
+    }
+
+    setTableName(getFileNameWithoutExtension(file));
+    setInputFile(file);
+    setChosenFileText(file.name);
+  };
+
+  const handleInputFileClick = (event) => {
+    const realInput = document.getElementById('inputFile');
+    realInput.click();
+  };
+
+  const handleSubmit = () => onClose({
+    amountOutputs,
     inputFile,
-    outputFile
+    tableName,
+    hitPolicy
   });
 
-  // we can use the built-in styles, e.g. by adding "btn btn-primary" class names
+  const handleDrop = (files = []) => {
+    if (!files.length) {
+      return;
+    }
+
+    handleInputFileChange({
+      target: { files }
+    });
+  };
+
   return <Modal onClose={ onClose }>
-    <Title>
-      Import Excel Sheet (.xlsx)
-    </Title>
+    <Dropzone onDrop={ handleDrop }>
+      <Title>
+        Import Excel Sheet (.xlsx)
+      </Title>
 
-    <Body>
-      <form id="importForm" onSubmit={ onSubmit }>
-        <fieldset>
-          <div className="fields">
-            <div className="form-group">
-              <label>Input File Path</label>
-              <input
-                type="text"
-                id="inputFile"
-                className="form-control"
-                name="inputFile"
-                value={ inputFile }
-                onChange={ event => setInputFile(event.target.value) }
-              />
+      <Body>
+        <form id="import-form" className="import-form" onSubmit={ handleSubmit }>
+          <fieldset>
+            <div className="fields">
+              <div className="form-group">
+                <div className="file-input">
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={ handleInputFileClick }>Select .xlsx file</button>
+                  <p>{chosenFileText}</p>
+                </div>
+
+                <input
+                  type="file"
+                  id="inputFile"
+                  accept="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                  className="form-control"
+                  name="inputFile"
+                  onChange={ handleInputFileChange }
+                />
+              </div>
+
             </div>
 
-            <div className="form-group">
-              <label>Input Columns</label>
-              <input
-                type="text"
-                id="inputColumns"
-                className="form-control"
-                name="inputColumns"
-                value={ inputColumns }
-                onChange={ event => setInputColumns(event.target.value) }
-              />
-            </div>
+          </fieldset>
 
-            <div className="form-group">
-              <label>Output Columns</label>
-              <input
-                type="text"
-                id="outputColumns"
-                className="form-control"
-                name="outputColumns"
-                value={ outputColumns }
-                onChange={ event => setOutputColumns(event.target.value) }
-              />
-            </div>
+          <fieldset>
 
-            <div className="form-group">
-              <label>Output File Path</label>
-              <input
-                type="text"
-                id="outputFile"
-                className="form-control"
-                name="outputFile"
-                value={ outputFile }
-                onChange={ event => setOutputFile(event.target.value) }
-              />
-            </div>
-          </div>
-        </fieldset>
-      </form>
-    </Body>
+            <legend>Decision Table Details</legend>
 
-    <Footer>
-      <div id="importFormButtons">
-        <button type="submit" class="btn btn-primary" form="importForm">Import</button>
-        <button type="button" class="btn btn-secondary" onClick={ () => onClose() }>Cancel</button>
-      </div>
-    </Footer>
+            <div className="fields">
+
+              <div className="form-group">
+                <label>Name</label>
+                <input
+                  type="text"
+                  id="tableName"
+                  className="form-control"
+                  name="tableName"
+                  placeholder="The file name is defaults to the excel sheet name."
+                  value={ tableName }
+                  onChange={ event => setTableName(event.target.value) } />
+              </div>
+
+              <div className="form-group">
+                <label>Amount output columns</label>
+                <input
+                  type="number"
+                  id="amountOutputs"
+                  className="form-control"
+                  name="amountOutputs"
+                  value={ amountOutputs }
+                  onChange={ event => setAmountOutputs(event.target.value) }
+                />
+              </div>
+
+              <div className="form-group">
+                <label>Hit Policy</label>
+                <select
+                  id="hitPolicy"
+                  className="form-control"
+                  name="hitPolicy"
+                  value={ hitPolicy }
+                  onChange={ event => setHitPolicy(event.target.value) }>
+                  <option>Unique</option>
+                  <option>First</option>
+                  <option>Priority</option>
+                  <option>Any</option>
+                  <option>Collect</option>
+                  <option>Collect (Sum)</option>
+                  <option>Collect (Min)</option>
+                  <option>Collect (Max)</option>
+                  <option>Collect (Count)</option>
+                  <option>Rule order</option>
+                  <option>Output order</option>
+                </select>
+              </div>
+
+            </div>
+          </fieldset>
+        </form>
+      </Body>
+
+      <Footer>
+        <div className="import-buttons">
+          <button
+            type="submit"
+            className="btn btn-primary"
+            disabled={ !isValid() }
+            form="import-form">Import</button>
+          <button
+            type="button"
+            className="btn btn-secondary"
+            onClick={ () => onClose() }>Cancel</button>
+        </div>
+      </Footer>
+    </Dropzone>
   </Modal>;
 }
 
+
+// helpers ////////////////////////
+
+const getFileNameWithoutExtension = (file) => {
+  return path.basename(file.path, '.xlsx');
+};
+
+const getDirectory = (file) => {
+  return path.dirname(file.path) + '/';
+};

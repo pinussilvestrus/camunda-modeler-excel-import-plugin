@@ -6,23 +6,42 @@ import ImportModal from './ImportModal';
 
 import Icon from '../resources/file-excel.svg';
 
+import HIT_POLICIES from './helper/hitPolicies';
+
+import Converter from '../../converter';
+
 const defaultState = {
   configOpen: false,
-  inputColumns: 'A,B',
-  outputColumns: 'C',
-  inputFile: '~/pet-projects/excel-to-dmn-plugin/example.xlsx',
-  outputFile: '~/Desktop/file.dmn'
+  amountOutputs: '1',
+  inputFile: '',
+  hitPolicy: 'Unique',
+  tableName: '',
+
+  // @deprecated
+  outputDirectory: '/Users/niklas.kiefer/Desktop/',
 };
 
 const API_URL = 'http://localhost:3000/';
+
+const ENCODING_UTF8 = 'utf8';
+
+const PLUGIN_EVENT = 'excel-import-plugin:import';
 
 export default class ExcelPlugin extends PureComponent {
   constructor(props) {
     super(props);
 
     this.state = defaultState;
+  }
 
-    this.handleConfigClosed = this.handleConfigClosed.bind(this);
+  componentDidMount() {
+    const {
+      subscribe
+    } = this.props;
+
+    subscribe(PLUGIN_EVENT, () => {
+      this.openModal();
+    });
   }
 
   handleImportError(error) {
@@ -44,23 +63,111 @@ export default class ExcelPlugin extends PureComponent {
     });
   }
 
-  async importExcelSheet(importDetails) {
+  async handleFileImportSuccess(xml) {
     const {
       triggerAction
     } = this.props;
 
+    const tab = await triggerAction('create-dmn-diagram', {
+      contents: xml
+    });
+
+    // wait a bit for editor to be loaded
+    setTimeout(function() {
+      triggerAction('save-tab', {
+        tab
+      });
+    }, 500);
+  }
+
+  /** @deprecated */
+  async convertXlsxFromApi(options) {
+    const {
+      _getGlobal
+    } = this.props;
+
+    const fileSystem = _getGlobal('fileSystem');
+
+    const response = await fetch(API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: createImportRequestBody(options)
+    });
+
+    if (!response.ok) {
+      throw new Error(response.statusText);
+    }
+
+    const convertedFile = await fileSystem.readFile(createOutputPath(options), {
+      encoding: ENCODING_UTF8
+    });
+
+    return convertedFile.contents;
+  }
+
+  async convertXlsx(options) {
+    const {
+      buffer,
+      amountOutputs,
+      tableName,
+      hitPolicy,
+      aggregation
+    } = options;
+
+    const xml = Converter.convertXmlToDmn({
+      buffer,
+      amountOutputs,
+      tableName,
+      hitPolicy,
+      aggregation
+    });
+
+    return xml;
+  }
+
+  async importExcelSheet(options) {
+    const {
+      _getGlobal
+    } = this.props;
+
+    const fileSystem = _getGlobal('fileSystem');
+
+    const {
+      inputFile,
+      hitPolicy
+    } = options;
+
     try {
-      const response = await fetch(API_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(importDetails)
+
+      // (0) get correct hit policy (and aggregation)
+      const hitPolicyDetails = toHitPolicy(hitPolicy);
+
+      options = {
+        ...options,
+        ...hitPolicyDetails
+      };
+
+      // (1) get excel sheet contents
+      const excelSheet = await fileSystem.readFile(inputFile.path, {
+        encoding: null,
+        asBuffer: true
       });
 
-      if (response.ok) {
-        await triggerAction('open-diagram');
-      }
+      const {
+        contents
+      } = excelSheet;
+
+      // (2) convert to DMN 1.3
+      // const xml2 = await this.convertXlsxFromApi(options);
+      const xml = await this.convertXlsx({
+        buffer: contents,
+        ...options
+      });
+
+      // (3) open and save generated DMN 1.3 file
+      return await this.handleFileImportSuccess(xml);
 
     } catch (error) {
       this.handleImportError(error);
@@ -77,31 +184,61 @@ export default class ExcelPlugin extends PureComponent {
     this.importExcelSheet(importDetails);
   }
 
+  openModal() {
+    this.setState({ modalOpen: true });
+  }
+
   render() {
     const {
       inputFile,
-      outputFile,
-      inputColumns,
-      outputColumns
+      amountOutputs,
+      tableName,
+      hitPolicy
     } = this.state;
 
     const initValues = {
-      inputColumns,
-      outputColumns,
       inputFile,
-      outputFile
+      amountOutputs,
+      tableName,
+      hitPolicy
     };
 
     return <Fragment>
-      <Fill slot="toolbar" group="9_excel">
-        <Icon className="excel-icon" onClick={ () => this.setState({ modalOpen: true }) } />
+      <Fill slot="toolbar" group="1_general">
+        <button
+          title="Open excel sheet"
+          className="excel-icon"
+          onClick={ this.openModal.bind(this) }
+        >
+          <Icon />
+        </button>
       </Fill>
       { this.state.modalOpen && (
         <ImportModal
-          onClose={ this.handleConfigClosed }
+          onClose={ this.handleConfigClosed.bind(this) }
           initValues={ initValues }
         />
       )}
     </Fragment>;
   }
 }
+
+
+// helpers ////////////////
+
+const createImportRequestBody = (details) => {
+  return JSON.stringify({
+    inputColumns: details.inputColumns,
+    outputColumns: details.outputColumns,
+    inputFile: details.inputFile.path,
+    outputFile: createOutputPath(details)
+  });
+};
+
+const createOutputPath = (details) => {
+  return details.outputDirectory + details.tableName + '.dmn';
+};
+
+const toHitPolicy = (rawValue) => {
+  return HIT_POLICIES[rawValue];
+};

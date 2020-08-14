@@ -1,0 +1,21 @@
+{
+  "name": "excel-to-dmn-converter",
+  "version": "1.0.0",
+  "description": "Converts excel files to DMN.",
+  "main": "index.js",
+  "scripts": {
+    "test": "mocha"
+  },
+  "author": "Felix Anhalt",
+  "license": "ISC",
+  "dependencies": {
+    "xmlbuilder": "^15.1.1",
+    "node-xlsx": "^0.15.0",
+    "eslint": "^7.6.0"
+  },
+  "devDependencies": {
+    "mocha": "^8.1.1",
+    "chai": "^4.2.0",
+    "dmn-moddle": "^9.1.0"
+  }
+}

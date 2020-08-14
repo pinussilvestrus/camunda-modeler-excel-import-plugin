@@ -1,12 +1,11 @@
 # camunda-modeler-excel-import-plugin
 
-[![Compatible with Camunda Modeler version 3.4](https://img.shields.io/badge/Camunda%20Modeler-3.4+-blue.svg)](https://github.com/camunda/camunda-modeler)
+[![Compatible with Camunda Modeler Branch hackdays-excel-plugin](https://img.shields.io/badge/Camunda%20Modeler-dev-blue.svg)](https://github.com/camunda/camunda-modeler)
 
-WIP
 
 ## How to use
 
-1. Download and copy this repository into the `plugins` directory of the Camunda Modeler
+1. Download and copy this `plugin` subfolder into the `plugins` directory of the Camunda Modeler
 2. Start the Camunda Modeler
 
 Refer to the [plugins documentation](https://github.com/camunda/camunda-modeler/tree/master/docs/plugins#plugging-into-the-camunda-modeler) to get detailed information on how to create and integrate Camunda Modeler plugins.
@@ -34,7 +33,7 @@ $ npm run all
 
 ## Compatibility Notice
 
-This plug-in is compatible with Camunda Modeler `v3.4+`.
+This plug-in is currently only compatible with Camunda Modeler branch `hackdays-excel-plugin`.
 
 ## Resources
 

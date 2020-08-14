@@ -61,3 +61,7 @@ typings/
 .next
 
 .DS_Store
+
+dis/
+!dist/client.js
+!dist/client.js.map
