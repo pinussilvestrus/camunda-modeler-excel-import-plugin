@@ -95,7 +95,7 @@ export default function ImportModal({ initValues, onClose }) {
                 id="tableName"
                 className="form-control"
                 name="tableName"
-                placeholder="The file name is default."
+                placeholder="The file name defaults to the excel sheet name."
                 value={ tableName }
                 onChange={ event => setTableName(event.target.value) } />
             </div>
