@@ -65,19 +65,35 @@ export default class ExcelPlugin extends PureComponent {
 
   async handleFileImportSuccess(xml) {
     const {
-      triggerAction
+      triggerAction,
+      subscribe
     } = this.props;
 
-    const tab = await triggerAction('create-dmn-diagram', {
-      contents: xml
+    let tab;
+
+    const hook = subscribe('dmn.modeler.created', (event) => {
+
+      const { modeler } = event;
+
+      modeler.once('import.parse.start', 5000, function() {
+        return xml;
+      });
+
+      // make tab dirty after import finished
+      modeler.once('import.done', function() {
+        const commandStack = modeler.getActiveViewer().get('commandStack');
+
+        setTimeout(function() {
+          commandStack.registerHandler('excel.foo', NoopHandler);
+          commandStack.execute('excel.foo');
+        }, 300);
+      });
     });
 
-    // wait a bit for editor to be loaded
-    setTimeout(function() {
-      triggerAction('save-tab', {
-        tab
-      });
-    }, 500);
+    tab = await triggerAction('create-dmn-diagram');
+
+    // cancel subscription after tab is created
+    hook.cancel();
   }
 
   /** @deprecated */
@@ -241,4 +257,15 @@ const createOutputPath = (details) => {
 
 const toHitPolicy = (rawValue) => {
   return HIT_POLICIES[rawValue];
+};
+
+const NoopHandler = function() {
+
+  this.execute = function(ctx) {
+
+  };
+
+  this.revert = function(ctx) {
+
+  };
 };

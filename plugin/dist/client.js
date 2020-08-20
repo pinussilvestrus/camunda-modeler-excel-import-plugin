@@ -228,6 +228,7 @@ exports.dmnContents = rawContent => {
   return {
     name: rawContent.name,
     hitPolicy: rawContent.hitPolicy,
+    aggregation: rawContent.aggregation,
     inputs: rawContent.inputs,
     outputs: rawContent.outputs,
     rules: rawContent.rules
@@ -359,6 +360,7 @@ exports.getDmnContent = ({
   const rawInputData = header.slice(0, header.length - amountOutputs);
   const rawOutputData = header.slice(header.length - amountOutputs);
   const safeRuleRows = validateRows(excelSheet[0].data.slice(1));
+  const typeRefs = getTypeRefs(safeRuleRows[0]);
 
   if (!tableName) {
     tableName = excelSheet[0].name;
@@ -368,21 +370,21 @@ exports.getDmnContent = ({
     name: tableName,
     hitPolicy: hitPolicy,
     aggregation: aggregation,
-    inputs: getInputs(rawInputData),
-    outputs: getOutputs(rawOutputData),
+    inputs: getInputs(rawInputData, typeRefs),
+    outputs: getOutputs(rawOutputData, typeRefs),
     rules: getRules(safeRuleRows, amountOutputs, header.length)
   });
 };
 
-const getInputs = inputArray => {
+const getInputs = (inputArray, typeRefs) => {
   return inputArray.map((text, index) => {
-    const expression = inputExpression.inputExpression(`InputExpression${index}`, text);
+    const expression = inputExpression.inputExpression(`InputExpression${index}`, text, typeRefs[index]);
     return input.input(`Input${index}`, text, expression);
   });
 };
 
-const getOutputs = outputArray => {
-  return outputArray.map((text, index) => output.output(`Output${index}`, text, text));
+const getOutputs = (outputArray, typeRefs, amountOutputs) => {
+  return outputArray.map((text, index) => output.output(`Output${index}`, text, text, typeRefs[typeRefs.length - outputArray.length + index]));
 };
 
 const getRules = (rows, amountOutputs, headerLength) => {
@@ -410,6 +412,28 @@ const validateRows = rows => {
 
 const getEntries = (row, ruleIndex, rowType) => {
   return row.map((text, entryIndex) => entry.entry(`${rowType}${ruleIndex}${entryIndex}`, text));
+};
+
+const getTypeRefs = row => {
+  return row.map(text => {
+    if (!text) {
+      return "string";
+    }
+
+    if (!isNaN(text)) {
+      if (Number.isSafeInteger(text)) {
+        return "integer";
+      } else {
+        return "double";
+      }
+    }
+
+    if (!(text.trim().startsWith('<') || text.trim().startsWith('>')) && (text.includes('<') || text.includes('>') || text.includes('&&') || text.includes('||'))) {
+      return 'boolean';
+    }
+
+    return 'string';
+  });
 };
 
 /***/ }),
@@ -37866,17 +37890,29 @@ class ExcelPlugin extends camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED
 
   async handleFileImportSuccess(xml) {
     const {
-      triggerAction
+      triggerAction,
+      subscribe
     } = this.props;
-    const tab = await triggerAction('create-dmn-diagram', {
-      contents: xml
-    }); // wait a bit for editor to be loaded
+    let tab;
+    const hook = subscribe('dmn.modeler.created', event => {
+      const {
+        modeler
+      } = event;
+      modeler.once('import.parse.start', 5000, function () {
+        return xml;
+      }); // make tab dirty after import finished
 
-    setTimeout(function () {
-      triggerAction('save-tab', {
-        tab
+      modeler.once('import.done', function () {
+        const commandStack = modeler.getActiveViewer().get('commandStack');
+        setTimeout(function () {
+          commandStack.registerHandler('excel.foo', NoopHandler);
+          commandStack.execute('excel.foo');
+        }, 300);
       });
-    }, 500);
+    });
+    tab = await triggerAction('create-dmn-diagram'); // cancel subscription after tab is created
+
+    hook.cancel();
   }
   /** @deprecated */
 
@@ -38026,6 +38062,12 @@ const toHitPolicy = rawValue => {
   return _helper_hitPolicies__WEBPACK_IMPORTED_MODULE_4__["default"][rawValue];
 };
 
+const NoopHandler = function () {
+  this.execute = function (ctx) {};
+
+  this.revert = function (ctx) {};
+};
+
 /***/ }),
 
 /***/ "./client/ImportModal.js":
@@ -38146,7 +38188,7 @@ function ImportModal({
     id: "tableName",
     className: "form-control",
     name: "tableName",
-    placeholder: "The file name is default.",
+    placeholder: "The file name is defaults to the excel sheet name.",
     value: tableName,
     onChange: event => setTableName(event.target.value)
   })), /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", {
