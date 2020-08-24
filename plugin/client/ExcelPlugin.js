@@ -167,8 +167,7 @@ export default class ExcelPlugin extends PureComponent {
 
       // (1) get excel sheet contents
       const excelSheet = await fileSystem.readFile(inputFile.path, {
-        encoding: null,
-        asBuffer: true
+        encoding: false
       });
 
       const {

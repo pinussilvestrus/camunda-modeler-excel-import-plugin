@@ -33,7 +33,7 @@ $ npm run all
 
 ## Compatibility Notice
 
-This plug-in is currently only compatible with Camunda Modeler branch `hackdays-excel-plugin`.
+This plug-in is currently only compatible with Camunda Modeler branch `develop`.
 
 ## Resources
 

@@ -37980,8 +37980,7 @@ class ExcelPlugin extends camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED
       }; // (1) get excel sheet contents
 
       const excelSheet = await fileSystem.readFile(inputFile.path, {
-        encoding: null,
-        asBuffer: true
+        encoding: false
       });
       const {
         contents
@@ -37991,7 +37990,8 @@ class ExcelPlugin extends camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED
       const xml = await this.convertXlsx({
         buffer: contents,
         ...options
-      }); // (3) open and save generated DMN 1.3 file
+      });
+      debugger; // (3) open and save generated DMN 1.3 file
 
       return await this.handleFileImportSuccess(xml);
     } catch (error) {
