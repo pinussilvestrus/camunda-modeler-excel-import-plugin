@@ -5,7 +5,7 @@
   "main": "index.js",
   "repository": {
     "type": "git",
-    "url": "https://github.com/pinussilvestrus/excel-to-dmn-plugin/tree/master/plugin"
+    "url": "https://github.com/pinussilvestrus/camunda-modeler-excel-import-plugin.git"
   },
   "author": "Niklas Kiefer <niklas.kiefer@camunda.com (https://github.com/pinussilvestrus)>",
   "license": "MIT",
