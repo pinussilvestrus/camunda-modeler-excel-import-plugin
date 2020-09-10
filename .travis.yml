@@ -1,0 +1,8 @@
+node_js: lts/*
+language: node-js
+os:
+    - osx
+    - linux
+    - windows
+script: 
+    - npm run all
