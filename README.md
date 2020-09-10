@@ -2,7 +2,7 @@
 
 > :warning: This project depends on unreleased Camunda Modeler changes.
 
-[![Compatible with Camunda Modeler Branch hackdays-excel-plugin](https://img.shields.io/badge/Camunda%20Modeler-4.3-blue.svg)](https://github.com/camunda/camunda-modeler)
+[![Build Status](https://travis-ci.org/pinussilvestrus/camunda-modeler-excel-import-plugin.svg?branch=master)](https://travis-ci.org/pinussilvestrus/camunda-modeler-excel-import-plugin) [![Compatible with Camunda Modeler Branch hackdays-excel-plugin](https://img.shields.io/badge/Camunda%20Modeler-4.3-blue.svg)](https://github.com/camunda/camunda-modeler)
 
 [Camunda Modeler](https://github.com/camunda/camunda-modeler/) plugin to import Excel Sheets to DMN Tables.
 
