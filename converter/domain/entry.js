@@ -1,6 +1,6 @@
 exports.entry = (id, text) => {
-    return {
-        id: id,
-        text: text
-    }
-}
+  return {
+    id: id,
+    text: text
+  };
+};

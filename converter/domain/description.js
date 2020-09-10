@@ -1,5 +1,5 @@
 exports.description = (content) => {
-    return {
-        content: content
-    }
-}
+  return {
+    content: content
+  };
+};

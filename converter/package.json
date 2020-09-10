@@ -3,11 +3,12 @@
   "version": "1.0.0",
   "description": "Converts excel files to DMN.",
   "main": "index.js",
+  "private": "true",
   "scripts": {
     "test": "mocha"
   },
-  "author": "Felix Anhalt",
-  "license": "ISC",
+  "author": "Felix Anhalt <felix.anhalt@camunda.com (https://github.com/anhaltFelix)>",
+  "license": "MIT",
   "dependencies": {
     "xmlbuilder": "^15.1.1",
     "node-xlsx": "^0.15.0",
