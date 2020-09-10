@@ -2,7 +2,7 @@
 
 const chai = require('chai');
 const expect = chai.expect;
-const excelHandler = require('../excelHandler');
+const excelHandler = require('../../converter/excelHandler');
 const fs = require('fs');
 const buffer = fs.readFileSync(__dirname + '/example.xlsx');
 

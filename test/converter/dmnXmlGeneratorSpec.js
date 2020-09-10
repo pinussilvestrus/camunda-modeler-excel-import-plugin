@@ -3,7 +3,7 @@
 const chai = require('chai');
 const expect = chai.expect;
 chai.should();
-const dmnXmlGenerator = require('../dmnXmlGenerator');
+const dmnXmlGenerator = require('../../converter/dmnXmlGenerator');
 const DmnModdle = require('dmn-moddle');
 const dmnModdle = DmnModdle();
 
