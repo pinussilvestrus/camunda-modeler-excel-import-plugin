@@ -1,5 +1,7 @@
 const path = require('path');
 
+const webpack = require('webpack');
+
 module.exports = {
   mode: 'development',
   entry: './client/index.js',
@@ -28,7 +30,16 @@ module.exports = {
   resolve: {
     alias: {
       react: 'camunda-modeler-plugin-helpers/react'
+    },
+    fallback: {
+      'path': require.resolve('path-browserify'),
+      'buffer': require.resolve('buffer/')
     }
   },
-  devtool: 'cheap-module-source-map'
+  devtool: 'cheap-module-source-map',
+  plugins: [
+    new webpack.ProvidePlugin({
+      Buffer: ['buffer', 'Buffer'],
+    })
+  ]
 };
