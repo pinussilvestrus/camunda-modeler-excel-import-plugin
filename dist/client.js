@@ -4557,7 +4557,7 @@ function _extends() { _extends = Object.assign || function (target) { for (var i
   \*******************************************/
 /***/ (function(module, __unused_webpack_exports, __webpack_require__) {
 
-/* provided dependency */ var Buffer = __webpack_require__(/*! buffer */ "?e7a9")["Buffer"];
+/* provided dependency */ var Buffer = __webpack_require__(/*! buffer */ "?130a")["Buffer"];
 /* cpexcel.js (C) 2013-present SheetJS -- http://sheetjs.com */
 /*jshint -W100 */
 var cptable = {version:"1.14.0"};
@@ -6073,7 +6073,7 @@ if ( true && module.exports && typeof DO_NOT_EXPORT_CODEPAGE === 'undefined') mo
   \************************************/
 /***/ ((module, exports, __webpack_require__) => {
 
-/* provided dependency */ var Buffer = __webpack_require__(/*! buffer */ "?e7a9")["Buffer"];
+/* provided dependency */ var Buffer = __webpack_require__(/*! buffer */ "?7276")["Buffer"];
 var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/*
 
 JSZip - A Javascript class for generating and reading zip files
@@ -15087,7 +15087,7 @@ module.exports = ZStream;
   \***********************************/
 /***/ ((module, exports, __webpack_require__) => {
 
-/* provided dependency */ var Buffer = __webpack_require__(/*! buffer */ "?e7a9")["Buffer"];
+/* provided dependency */ var Buffer = __webpack_require__(/*! buffer */ "?7276")["Buffer"];
 /*! xlsx.js (C) 2013-present SheetJS -- http://sheetjs.com */
 /* vim: set ts=2: */
 /*exported XLSX */
@@ -16526,7 +16526,7 @@ function parse_extra_field(blob) {
 	return o;
 }
 var fs;
-function get_fs() { return fs || (fs = __webpack_require__(/*! fs */ "?65c5")); }
+function get_fs() { return fs || (fs = __webpack_require__(/*! fs */ "?58fb")); }
 function parse(file, options) {
 if(file[0] == 0x50 && file[1] == 0x4b) return parse_zip(file, options);
 if(file.length < 512) throw new Error("CFB file size " + file.length + " < 512");
@@ -17772,7 +17772,7 @@ return exports;
 
 if( true && typeof DO_NOT_EXPORT_CFB === 'undefined') { module.exports = CFB; }
 var _fs;
-if(true) try { _fs = __webpack_require__(/*! fs */ "?65c5"); } catch(e) {}
+if(true) try { _fs = __webpack_require__(/*! fs */ "?58fb"); } catch(e) {}
 
 /* normalize data for blob ctor */
 function blobify(data) {
@@ -18712,7 +18712,7 @@ var make_offcrypto = function(O, _crypto) {
 	var crypto;
 	if(typeof _crypto !== 'undefined') crypto = _crypto;
 	else if(true) {
-		try { crypto = __webpack_require__(/*! crypto */ "?8465"); }
+		try { crypto = __webpack_require__(/*! crypto */ "?e708"); }
 		catch(e) { crypto = null; }
 	}
 
@@ -36658,7 +36658,7 @@ return utils;
 })(utils);
 
 if(has_buf && "function" != 'undefined') (function() {
-	var Readable = __webpack_require__(/*! stream */ "?cc48").Readable;
+	var Readable = __webpack_require__(/*! stream */ "?20df").Readable;
 
 	var write_csv_stream = function(sheet, opts) {
 		var stream = Readable();
@@ -42089,7 +42089,7 @@ var XLS = XLSX, ODS = XLSX;
 
 /***/ }),
 
-/***/ "?e7a9":
+/***/ "?130a":
 /*!************************!*\
   !*** buffer (ignored) ***!
   \************************/
@@ -42099,7 +42099,17 @@ var XLS = XLSX, ODS = XLSX;
 
 /***/ }),
 
-/***/ "?8465":
+/***/ "?7276":
+/*!************************!*\
+  !*** buffer (ignored) ***!
+  \************************/
+/***/ (() => {
+
+/* (ignored) */
+
+/***/ }),
+
+/***/ "?e708":
 /*!************************!*\
   !*** crypto (ignored) ***!
   \************************/
@@ -42109,7 +42119,7 @@ var XLS = XLSX, ODS = XLSX;
 
 /***/ }),
 
-/***/ "?65c5":
+/***/ "?58fb":
 /*!********************!*\
   !*** fs (ignored) ***!
   \********************/
@@ -42119,7 +42129,7 @@ var XLS = XLSX, ODS = XLSX;
 
 /***/ }),
 
-/***/ "?cc48":
+/***/ "?20df":
 /*!************************!*\
   !*** stream (ignored) ***!
   \************************/
@@ -42137,8 +42147,9 @@ var XLS = XLSX, ODS = XLSX;
 /******/ 	// The require function
 /******/ 	function __webpack_require__(moduleId) {
 /******/ 		// Check if module is in cache
-/******/ 		if(__webpack_module_cache__[moduleId]) {
-/******/ 			return __webpack_module_cache__[moduleId].exports;
+/******/ 		var cachedModule = __webpack_module_cache__[moduleId];
+/******/ 		if (cachedModule !== undefined) {
+/******/ 			return cachedModule.exports;
 /******/ 		}
 /******/ 		// Create a new module (and put it into the cache)
 /******/ 		var module = __webpack_module_cache__[moduleId] = {
