@@ -1,4 +1,4 @@
-exports.description = (content) => {
+export default (content) => {
   return {
     content: content
   };

@@ -17,12 +17,13 @@
     "dev": "webpack -w",
     "build": "webpack",
     "lint": "eslint .",
-    "mocha": "mocha \"test/**/*Spec.js\"",
+    "mocha": "mocha -r esm \"test/**/*Spec.js\"",
     "test": "run-s lint mocha"
   },
   "dependencies": {
     "node-xlsx": "^0.16.1",
-    "xmlbuilder": "^15.1.1"
+    "xmlbuilder": "^15.1.1",
+    "dmn-moddle": "^9.1.0"
   },
   "devDependencies": {
     "@babel/core": "^7.13.13",
@@ -31,9 +32,9 @@
     "buffer": "^6.0.3",
     "camunda-modeler-plugin-helpers": "^3.4.0-alpha.1",
     "chai": "^4.3.4",
-    "dmn-moddle": "^9.1.0",
     "eslint": "^7.23.0",
     "eslint-plugin-bpmn-io": "^0.12.0",
+    "esm": "^3.2.25",
     "mocha": "^8.3.2",
     "npm-run-all": "^4.1.5",
     "path-browserify": "^1.0.1",

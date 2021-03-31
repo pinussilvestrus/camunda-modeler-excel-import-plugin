@@ -1,4 +1,4 @@
-exports.output = (id, text, name, typeRef = 'string') => {
+export default (id, text, name, typeRef = 'string') => {
   return {
     id: id,
     text: text,

@@ -1,4 +1,4 @@
-exports.rule = (id, description, inputEntries, outputEntries) => {
+export default (id, description, inputEntries, outputEntries) => {
   return {
     id: id,
     description: description,
