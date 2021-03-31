@@ -1,6 +1,12 @@
 /* eslint-disable no-unused-vars*/
-import React, { Fragment, PureComponent } from 'camunda-modeler-plugin-helpers/react';
-import { Fill } from 'camunda-modeler-plugin-helpers/components';
+import React, {
+  Fragment,
+  PureComponent
+} from 'camunda-modeler-plugin-helpers/react';
+
+import {
+  Fill
+} from 'camunda-modeler-plugin-helpers/components';
 
 import ImportModal from './ImportModal';
 
@@ -8,9 +14,13 @@ import Icon from '../resources/file-excel.svg';
 
 import HIT_POLICIES from './helper/hitPolicies';
 
-import Converter from '../converter';
+import {
+  convertXlsxToDmn,
+  convertDmnToXlsx
+} from '../converter';
 
 const defaultState = {
+  activeTab: {},
   configOpen: false,
   amountOutputs: '1',
   inputFile: '',
@@ -27,6 +37,13 @@ const ENCODING_UTF8 = 'utf8';
 
 const PLUGIN_EVENT = 'excel-import-plugin:import';
 
+const FILTER_XLSX = {
+  name: 'Excel file',
+  encoding: ENCODING_UTF8,
+  extensions: [ 'xlsx' ]
+};
+
+
 export default class ExcelPlugin extends PureComponent {
   constructor(props) {
     super(props);
@@ -41,6 +58,10 @@ export default class ExcelPlugin extends PureComponent {
 
     subscribe(PLUGIN_EVENT, () => {
       this.openModal();
+    });
+
+    subscribe('app.activeTabChanged', ({ activeTab }) => {
+      this.setState({ activeTab });
     });
   }
 
@@ -60,6 +81,40 @@ export default class ExcelPlugin extends PureComponent {
     log({
       category: 'excel-import-error',
       message: error.message
+    });
+  }
+
+  handleExportError(error) {
+    const {
+      displayNotification,
+      log
+    } = this.props;
+
+    displayNotification({
+      type: 'error',
+      title: 'Excel export failed',
+      content: 'See the log for further details.',
+      duration: 10000
+    });
+
+    log({
+      category: 'excel-export-error',
+      message: error.message
+    });
+  }
+
+  handleExportSuccess(exportPath, exportedDecisionTables) {
+    const {
+      displayNotification
+    } = this.props;
+
+    const message = `${exportedDecisionTables.length} Decision Tables were exported. Find your exported Excel file at <${exportPath }>.`;
+
+    displayNotification({
+      type: 'success',
+      title: 'Export succeeded!',
+      content: message,
+      duration: 10000
     });
   }
 
@@ -132,7 +187,7 @@ export default class ExcelPlugin extends PureComponent {
       aggregation
     } = options;
 
-    const xml = Converter.convertXmlToDmn({
+    const xml = convertXlsxToDmn({
       buffer,
       amountOutputs,
       tableName,
@@ -203,8 +258,70 @@ export default class ExcelPlugin extends PureComponent {
     this.setState({ modalOpen: true });
   }
 
+  async export() {
+    const {
+      activeTab
+    } = this.state;
+
+    const {
+      _getGlobal,
+      triggerAction
+    } = this.props;
+
+    try {
+
+      // (0) save tab contents
+      const savedTab = await triggerAction('save-tab', { tab: activeTab });
+
+      const {
+        file,
+        name
+      } = savedTab;
+
+      // (1) ask user were to export the file
+      const dialog = _getGlobal('dialog');
+
+      const exportPath = await dialog.showSaveFileDialog({
+        file,
+        title: `Save ${name} as ...`,
+        filters: [
+          FILTER_XLSX
+        ]
+      });
+
+      if (!exportPath) {
+        return false;
+      }
+
+      // (2) convert DMN 1.3 file to xlsx
+      const {
+        contents,
+        exportedDecisionTables
+      } = await convertDmnToXlsx({
+        xml: file.contents
+      });
+
+      // (3) save file on disk
+      const fileSystem = _getGlobal('fileSystem');
+
+      await fileSystem.writeFile(exportPath, {
+        ...file,
+        contents
+      }, {
+        ENCODING_UTF8,
+        fileType: 'xlsx'
+      });
+
+      return this.handleExportSuccess(exportPath, exportedDecisionTables);
+    } catch (error) {
+      return this.handleExportError(error);
+    }
+
+  }
+
   render() {
     const {
+      activeTab,
       inputFile,
       amountOutputs,
       tableName,
@@ -228,6 +345,18 @@ export default class ExcelPlugin extends PureComponent {
           <Icon />
         </button>
       </Fill>
+
+      { isDMN(activeTab) && (
+        <Fill slot="toolbar" group="4_export">
+          <button
+            title="Export as excel sheet"
+            className="excel-icon"
+            onClick={ this.export.bind(this) }
+          >
+            <Icon />
+          </button>
+        </Fill>
+      )}
       { this.state.modalOpen && (
         <ImportModal
           onClose={ this.handleConfigClosed.bind(this) }
@@ -267,4 +396,8 @@ const NoopHandler = function() {
   this.revert = function(ctx) {
 
   };
+};
+
+const isDMN = (tab) => {
+  return tab.type === 'dmn';
 };
