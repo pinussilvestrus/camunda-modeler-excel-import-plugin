@@ -225,6 +225,7 @@ __webpack_require__.r(__webpack_exports__);
 
 
 const defaultState = {
+  activeTab: {},
   configOpen: false,
   amountOutputs: '1',
   inputFile: '',
@@ -236,6 +237,11 @@ const defaultState = {
 const API_URL = 'http://localhost:3000/';
 const ENCODING_UTF8 = 'utf8';
 const PLUGIN_EVENT = 'excel-import-plugin:import';
+const FILTER_XLSX = {
+  name: 'Excel file',
+  encoding: ENCODING_UTF8,
+  extensions: ['xlsx']
+};
 class ExcelPlugin extends camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0__.PureComponent {
   constructor(props) {
     super(props);
@@ -248,6 +254,13 @@ class ExcelPlugin extends camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED
     } = this.props;
     subscribe(PLUGIN_EVENT, () => {
       this.openModal();
+    });
+    subscribe('app.activeTabChanged', ({
+      activeTab
+    }) => {
+      this.setState({
+        activeTab
+      });
     });
   }
 
@@ -265,6 +278,36 @@ class ExcelPlugin extends camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED
     log({
       category: 'excel-import-error',
       message: error.message
+    });
+  }
+
+  handleExportError(error) {
+    const {
+      displayNotification,
+      log
+    } = this.props;
+    displayNotification({
+      type: 'error',
+      title: 'Excel export failed',
+      content: 'See the log for further details.',
+      duration: 10000
+    });
+    log({
+      category: 'excel-export-error',
+      message: error.message
+    });
+  }
+
+  handleExportSuccess(exportPath, exportedDecisionTables) {
+    const {
+      displayNotification
+    } = this.props;
+    const message = `${exportedDecisionTables.length} Decision Tables were exported. Find your exported Excel file at <${exportPath}>.`;
+    displayNotification({
+      type: 'success',
+      title: 'Export succeeded!',
+      content: message,
+      duration: 10000
     });
   }
 
@@ -330,7 +373,7 @@ class ExcelPlugin extends camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED
       hitPolicy,
       aggregation
     } = options;
-    const xml = _converter__WEBPACK_IMPORTED_MODULE_5__.convertXmlToDmn({
+    const xml = (0,_converter__WEBPACK_IMPORTED_MODULE_5__.convertXlsxToDmn)({
       buffer,
       amountOutputs,
       tableName,
@@ -396,8 +439,62 @@ class ExcelPlugin extends camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED
     });
   }
 
+  async export() {
+    const {
+      activeTab
+    } = this.state;
+    const {
+      _getGlobal,
+      triggerAction
+    } = this.props;
+
+    try {
+      // (0) save tab contents
+      const savedTab = await triggerAction('save-tab', {
+        tab: activeTab
+      });
+      const {
+        file,
+        name
+      } = savedTab; // (1) ask user were to export the file
+
+      const dialog = _getGlobal('dialog');
+
+      const exportPath = await dialog.showSaveFileDialog({
+        file,
+        title: `Save ${name} as ...`,
+        filters: [FILTER_XLSX]
+      });
+
+      if (!exportPath) {
+        return false;
+      } // (2) convert DMN 1.3 file to xlsx
+
+
+      const {
+        contents,
+        exportedDecisionTables
+      } = await (0,_converter__WEBPACK_IMPORTED_MODULE_5__.convertDmnToXlsx)({
+        xml: file.contents
+      }); // (3) save file on disk
+
+      const fileSystem = _getGlobal('fileSystem');
+
+      await fileSystem.writeFile(exportPath, { ...file,
+        contents
+      }, {
+        ENCODING_UTF8,
+        fileType: 'xlsx'
+      });
+      return this.handleExportSuccess(exportPath, exportedDecisionTables);
+    } catch (error) {
+      return this.handleExportError(error);
+    }
+  }
+
   render() {
     const {
+      activeTab,
       inputFile,
       amountOutputs,
       tableName,
@@ -416,6 +513,13 @@ class ExcelPlugin extends camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED
       title: "Open excel sheet",
       className: "excel-icon",
       onClick: this.openModal.bind(this)
+    }, /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_resources_file_excel_svg__WEBPACK_IMPORTED_MODULE_3__.default, null))), isDMN(activeTab) && /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement(camunda_modeler_plugin_helpers_components__WEBPACK_IMPORTED_MODULE_1__.Fill, {
+      slot: "toolbar",
+      group: "4_export"
+    }, /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement("button", {
+      title: "Export as excel sheet",
+      className: "excel-icon",
+      onClick: this.export.bind(this)
     }, /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_resources_file_excel_svg__WEBPACK_IMPORTED_MODULE_3__.default, null))), this.state.modalOpen && /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_ImportModal__WEBPACK_IMPORTED_MODULE_2__.default, {
       onClose: this.handleConfigClosed.bind(this),
       initValues: initValues
@@ -445,6 +549,10 @@ const NoopHandler = function () {
   this.execute = function (ctx) {};
 
   this.revert = function (ctx) {};
+};
+
+const isDMN = tab => {
+  return tab.type === 'dmn';
 };
 
 /***/ }),
@@ -665,13 +773,105 @@ __webpack_require__.r(__webpack_exports__);
 
 /***/ }),
 
+/***/ "./converter/dmnJsonGenerator.js":
+/*!***************************************!*\
+  !*** ./converter/dmnJsonGenerator.js ***!
+  \***************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "buildJsonFromXML": () => (/* binding */ buildJsonFromXML)
+/* harmony export */ });
+/* harmony import */ var dmn_moddle__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! dmn-moddle */ "./node_modules/dmn-moddle/dist/index.esm.js");
+
+const dmnModdle = new dmn_moddle__WEBPACK_IMPORTED_MODULE_0__.default();
+const buildJsonFromXML = async ({
+  xml
+}) => {
+  return new Promise((resolve, reject) => {
+    dmnModdle.fromXML(xml, (err, definitions) => {
+      if (err) {
+        reject(err);
+      }
+
+      const decisionTables = getAllDecisionTables(definitions);
+      resolve(decisionTables.map(d => {
+        const decisionLogic = d.get('decisionLogic');
+        return {
+          id: d.id,
+          inputs: decisionLogic.get('input').map(buildParseableInput),
+          outputs: decisionLogic.get('output').map(buildParseableOutput),
+          rules: decisionLogic.get('rule').map(buildParseableRule),
+          name: d.get('name')
+        };
+      }));
+    });
+  });
+}; // helpers ////////////////////
+
+const getAllDecisionTables = definitions => {
+  const drgElement = definitions.get('drgElement');
+
+  if (!drgElement || !drgElement.length) {
+    return [];
+  }
+
+  const decisions = drgElement.filter(d => d.$type === 'dmn:Decision');
+  return decisions.filter(dt => dt.get('decisionLogic').$type === 'dmn:DecisionTable');
+};
+
+const buildParseableInput = input => {
+  const expression = input.get('inputExpression');
+
+  if (expression && expression.get('text')) {
+    return expression.get('text');
+  }
+
+  return input.get('label');
+};
+
+const buildParseableOutput = output => {
+  return output.get('name') || output.get('label');
+};
+
+const buildParseableRule = rule => {
+  const inputEntries = rule.get('inputEntry');
+  const outputEntries = rule.get('outputEntry');
+  const annotation = rule.get('description');
+  let parseableRule = [];
+
+  if (inputEntries && inputEntries.length) {
+    inputEntries.forEach(i => parseableRule.push(i.get('text')));
+  }
+
+  if (outputEntries && outputEntries.length) {
+    outputEntries.forEach(o => parseableRule.push(o.get('text')));
+  }
+
+  if (annotation) {
+    parseableRule.push(annotation);
+  }
+
+  return parseableRule;
+};
+
+/***/ }),
+
 /***/ "./converter/dmnXmlGenerator.js":
 /*!**************************************!*\
   !*** ./converter/dmnXmlGenerator.js ***!
   \**************************************/
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
-const builder = __webpack_require__(/*! xmlbuilder */ "./node_modules/xmlbuilder/lib/index.js");
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "buildXmlFromDmnContent": () => (/* binding */ buildXmlFromDmnContent)
+/* harmony export */ });
+/* harmony import */ var xmlbuilder__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! xmlbuilder */ "./node_modules/xmlbuilder/lib/index.js");
+/* harmony import */ var xmlbuilder__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(xmlbuilder__WEBPACK_IMPORTED_MODULE_0__);
 
 const xmlns = 'https://www.omg.org/spec/DMN/20191111/MODEL/';
 const xmlnsDmndi = 'https://www.omg.org/spec/DMN/20191111/DMNDI/';
@@ -681,7 +881,7 @@ const name = 'DRD';
 const namespace = 'http://camunda.org/schema/1.0/dmn';
 
 const generateBaseNodes = decisionName => {
-  let xml = builder.create({
+  let xml = xmlbuilder__WEBPACK_IMPORTED_MODULE_0___default().create({
     'definitions': {
       '@xmlns': xmlns,
       '@xmlns:dmndi': xmlnsDmndi,
@@ -745,9 +945,10 @@ const generateOutputNodes = outputs => {
       '@typeRef': output.typeRef
     };
   });
-};
+}; // API //////////////////////////
 
-exports.buildXmlFromDmnContent = dmnContents => {
+
+const buildXmlFromDmnContent = dmnContents => {
   var builder = generateBaseNodes(dmnContents.name);
   const ruleNodes = generateRuleNodes(dmnContents.rules);
   const inputNodes = generateInputNodes(dmnContents.inputs);
@@ -780,9 +981,14 @@ exports.buildXmlFromDmnContent = dmnContents => {
 /*!*****************************************!*\
   !*** ./converter/domain/dmnContents.js ***!
   \*****************************************/
-/***/ ((__unused_webpack_module, exports) => {
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
-exports.dmnContents = rawContent => {
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (rawContent => {
   return {
     name: rawContent.name,
     hitPolicy: rawContent.hitPolicy,
@@ -791,7 +997,7 @@ exports.dmnContents = rawContent => {
     outputs: rawContent.outputs,
     rules: rawContent.rules
   };
-};
+});
 
 /***/ }),
 
@@ -799,14 +1005,19 @@ exports.dmnContents = rawContent => {
 /*!***********************************!*\
   !*** ./converter/domain/entry.js ***!
   \***********************************/
-/***/ ((__unused_webpack_module, exports) => {
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
-exports.entry = (id, text) => {
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ((id, text) => {
   return {
     id: id,
     text: text
   };
-};
+});
 
 /***/ }),
 
@@ -814,15 +1025,20 @@ exports.entry = (id, text) => {
 /*!***********************************!*\
   !*** ./converter/domain/input.js ***!
   \***********************************/
-/***/ ((__unused_webpack_module, exports) => {
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
-exports.input = (id, label, inputExpression) => {
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ((id, label, inputExpression) => {
   return {
     id: id,
     label: label,
     inputExpression: inputExpression
   };
-};
+});
 
 /***/ }),
 
@@ -830,15 +1046,20 @@ exports.input = (id, label, inputExpression) => {
 /*!*********************************************!*\
   !*** ./converter/domain/inputExpression.js ***!
   \*********************************************/
-/***/ ((__unused_webpack_module, exports) => {
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
-exports.inputExpression = (id, text, typeRef = 'string') => {
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ((id, text, typeRef = 'string') => {
   return {
     id: id,
     text: text,
     typeRef: typeRef
   };
-};
+});
 
 /***/ }),
 
@@ -846,16 +1067,21 @@ exports.inputExpression = (id, text, typeRef = 'string') => {
 /*!************************************!*\
   !*** ./converter/domain/output.js ***!
   \************************************/
-/***/ ((__unused_webpack_module, exports) => {
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
-exports.output = (id, text, name, typeRef = 'string') => {
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ((id, text, name, typeRef = 'string') => {
   return {
     id: id,
     text: text,
     name: name,
     typeRef: typeRef
   };
-};
+});
 
 /***/ }),
 
@@ -863,16 +1089,21 @@ exports.output = (id, text, name, typeRef = 'string') => {
 /*!**********************************!*\
   !*** ./converter/domain/rule.js ***!
   \**********************************/
-/***/ ((__unused_webpack_module, exports) => {
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
-exports.rule = (id, description, inputEntries, outputEntries) => {
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ((id, description, inputEntries, outputEntries) => {
   return {
     id: id,
     description: description,
     inputEntries: inputEntries,
     outputEntries: outputEntries
   };
-};
+});
 
 /***/ }),
 
@@ -880,61 +1111,38 @@ exports.rule = (id, description, inputEntries, outputEntries) => {
 /*!***********************************!*\
   !*** ./converter/excelHandler.js ***!
   \***********************************/
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
-const xlsx = __webpack_require__(/*! node-xlsx */ "./node_modules/node-xlsx/lib/index.js");
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "parseDmnContent": () => (/* binding */ parseDmnContent),
+/* harmony export */   "buildXlsx": () => (/* binding */ buildXlsx)
+/* harmony export */ });
+/* harmony import */ var node_xlsx__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! node-xlsx */ "./node_modules/node-xlsx/lib/index.js");
+/* harmony import */ var _domain_entry__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./domain/entry */ "./converter/domain/entry.js");
+/* harmony import */ var _domain_input__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./domain/input */ "./converter/domain/input.js");
+/* harmony import */ var _domain_inputExpression__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./domain/inputExpression */ "./converter/domain/inputExpression.js");
+/* harmony import */ var _domain_output__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./domain/output */ "./converter/domain/output.js");
+/* harmony import */ var _domain_rule__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ./domain/rule */ "./converter/domain/rule.js");
+/* harmony import */ var _domain_dmnContents__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ./domain/dmnContents */ "./converter/domain/dmnContents.js");
 
-const entry = __webpack_require__(/*! ./domain/entry */ "./converter/domain/entry.js");
 
-const input = __webpack_require__(/*! ./domain/input */ "./converter/domain/input.js");
 
-const inputExpression = __webpack_require__(/*! ./domain/inputExpression */ "./converter/domain/inputExpression.js");
 
-const output = __webpack_require__(/*! ./domain/output */ "./converter/domain/output.js");
 
-const rule = __webpack_require__(/*! ./domain/rule */ "./converter/domain/rule.js");
 
-const dmnContent = __webpack_require__(/*! ./domain/dmnContents */ "./converter/domain/dmnContents.js");
 
-exports.getDmnContent = ({
-  buffer,
-  tableName,
-  amountOutputs = 1,
-  hitPolicy = 'UNQIUE',
-  aggregation
-}) => {
-  const excelSheet = xlsx.parse(buffer, {
-    type: 'buffer'
-  });
-  const header = excelSheet[0].data[0];
-  const rawInputData = header.slice(0, header.length - amountOutputs);
-  const rawOutputData = header.slice(header.length - amountOutputs);
-  const safeRuleRows = validateRows(excelSheet[0].data.slice(1));
-  const typeRefs = getTypeRefs(safeRuleRows[0]);
-
-  if (!tableName) {
-    tableName = excelSheet[0].name;
-  }
-
-  return dmnContent.dmnContents({
-    name: tableName,
-    hitPolicy: hitPolicy,
-    aggregation: aggregation,
-    inputs: getInputs(rawInputData, typeRefs),
-    outputs: getOutputs(rawOutputData, typeRefs),
-    rules: getRules(safeRuleRows, amountOutputs, header.length)
-  });
-};
 
 const getInputs = (inputArray, typeRefs) => {
   return inputArray.map((text, index) => {
-    const expression = inputExpression.inputExpression(`InputExpression${index}`, text, typeRefs[index]);
-    return input.input(`Input${index}`, text, expression);
+    const expression = (0,_domain_inputExpression__WEBPACK_IMPORTED_MODULE_3__.default)(`InputExpression${index}`, text, typeRefs[index]);
+    return (0,_domain_input__WEBPACK_IMPORTED_MODULE_2__.default)(`Input${index}`, text, expression);
   });
 };
 
 const getOutputs = (outputArray, typeRefs, amountOutputs) => {
-  return outputArray.map((text, index) => output.output(`Output${index}`, text, text, typeRefs[typeRefs.length - outputArray.length + index]));
+  return outputArray.map((text, index) => (0,_domain_output__WEBPACK_IMPORTED_MODULE_4__.default)(`Output${index}`, text, text, typeRefs[typeRefs.length - outputArray.length + index]));
 };
 
 const getRules = (rows, amountOutputs, headerLength) => {
@@ -945,7 +1153,7 @@ const getRules = (rows, amountOutputs, headerLength) => {
       inputEntries: getEntries(row.slice(0, headerLength - amountOutputs), index, 'InputEntry'),
       outputEntries: getEntries(row.slice(headerLength - amountOutputs, headerLength), index, 'OutputEntry')
     };
-    return rule.rule(ruleData.id, ruleData.description, ruleData.inputEntries, ruleData.outputEntries);
+    return (0,_domain_rule__WEBPACK_IMPORTED_MODULE_5__.default)(ruleData.id, ruleData.description, ruleData.inputEntries, ruleData.outputEntries);
   });
 };
 
@@ -961,7 +1169,7 @@ const validateRows = rows => {
 };
 
 const getEntries = (row, ruleIndex, rowType) => {
-  return row.map((text, entryIndex) => entry.entry(`${rowType}${ruleIndex}${entryIndex}`, text));
+  return row.map((text, entryIndex) => (0,_domain_entry__WEBPACK_IMPORTED_MODULE_1__.default)(`${rowType}${ruleIndex}${entryIndex}`, text));
 };
 
 const getTypeRefs = row => {
@@ -984,6 +1192,46 @@ const getTypeRefs = row => {
 
     return 'string';
   });
+}; // API //////////////////////////////
+
+
+const parseDmnContent = ({
+  buffer,
+  tableName,
+  amountOutputs = 1,
+  hitPolicy = 'UNQIUE',
+  aggregation
+}) => {
+  const excelSheet = node_xlsx__WEBPACK_IMPORTED_MODULE_0__.default.parse(buffer, {
+    type: 'buffer'
+  });
+  const header = excelSheet[0].data[0];
+  const rawInputData = header.slice(0, header.length - amountOutputs);
+  const rawOutputData = header.slice(header.length - amountOutputs);
+  const safeRuleRows = validateRows(excelSheet[0].data.slice(1));
+  const typeRefs = getTypeRefs(safeRuleRows[0]);
+
+  if (!tableName) {
+    tableName = excelSheet[0].name;
+  }
+
+  return (0,_domain_dmnContents__WEBPACK_IMPORTED_MODULE_6__.default)({
+    name: tableName,
+    hitPolicy: hitPolicy,
+    aggregation: aggregation,
+    inputs: getInputs(rawInputData, typeRefs),
+    outputs: getOutputs(rawOutputData, typeRefs),
+    rules: getRules(safeRuleRows, amountOutputs, header.length)
+  });
+};
+const buildXlsx = decisionTables => {
+  const dataSheets = decisionTables.map(decisionTable => {
+    return {
+      name: decisionTable.name,
+      data: [[...decisionTable.inputs, ...decisionTable.outputs], ...decisionTable.rules]
+    };
+  });
+  return node_xlsx__WEBPACK_IMPORTED_MODULE_0__.default.build(dataSheets);
 };
 
 /***/ }),
@@ -992,15 +1240,31 @@ const getTypeRefs = row => {
 /*!****************************!*\
   !*** ./converter/index.js ***!
   \****************************/
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
-const excelHandler = __webpack_require__(/*! ./excelHandler */ "./converter/excelHandler.js");
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "convertXlsxToDmn": () => (/* binding */ convertXlsxToDmn),
+/* harmony export */   "convertDmnToXlsx": () => (/* binding */ convertDmnToXlsx)
+/* harmony export */ });
+/* harmony import */ var _excelHandler__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./excelHandler */ "./converter/excelHandler.js");
+/* harmony import */ var _dmnXmlGenerator__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./dmnXmlGenerator */ "./converter/dmnXmlGenerator.js");
+/* harmony import */ var _dmnJsonGenerator__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./dmnJsonGenerator */ "./converter/dmnJsonGenerator.js");
 
-const dmnXmlGenerator = __webpack_require__(/*! ./dmnXmlGenerator */ "./converter/dmnXmlGenerator.js");
 
-exports.convertXmlToDmn = options => {
-  const dmnContent = excelHandler.getDmnContent(options);
-  return dmnXmlGenerator.buildXmlFromDmnContent(dmnContent);
+
+const convertXlsxToDmn = options => {
+  const dmnContent = (0,_excelHandler__WEBPACK_IMPORTED_MODULE_0__.parseDmnContent)(options);
+  return (0,_dmnXmlGenerator__WEBPACK_IMPORTED_MODULE_1__.buildXmlFromDmnContent)(dmnContent);
+};
+const convertDmnToXlsx = async options => {
+  const dmnContent = await (0,_dmnJsonGenerator__WEBPACK_IMPORTED_MODULE_2__.buildJsonFromXML)(options);
+  const xlsx = (0,_excelHandler__WEBPACK_IMPORTED_MODULE_0__.buildXlsx)(dmnContent);
+  return {
+    contents: xlsx,
+    exportedDecisionTables: dmnContent
+  };
 };
 
 /***/ }),
@@ -3593,6 +3857,1796 @@ module.exports = window.react;
 
 /***/ }),
 
+/***/ "./node_modules/dmn-moddle/dist/index.esm.js":
+/*!***************************************************!*\
+  !*** ./node_modules/dmn-moddle/dist/index.esm.js ***!
+  \***************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var min_dash__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! min-dash */ "./node_modules/min-dash/dist/index.esm.js");
+/* harmony import */ var moddle__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! moddle */ "./node_modules/moddle/dist/index.esm.js");
+/* harmony import */ var moddle_xml__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! moddle-xml */ "./node_modules/moddle-xml/dist/index.esm.js");
+
+
+
+
+/**
+ * A sub class of {@link Moddle} with support for import and export of DMN xml files.
+ *
+ * @class DmnModdle
+ * @extends Moddle
+ *
+ * @param {Object|Array} packages to use for instantiating the model
+ * @param {Object} [options] additional options to pass over
+ */
+function DmnModdle(packages, options) {
+  moddle__WEBPACK_IMPORTED_MODULE_0__.Moddle.call(this, packages, options);
+}
+
+DmnModdle.prototype = Object.create(moddle__WEBPACK_IMPORTED_MODULE_0__.Moddle.prototype);
+
+
+/**
+ * Instantiates a DMN model tree from a given xml string.
+ *
+ * @param {String}   xmlStr
+ * @param {String}   [typeName='dmn:Definitions'] name of the root element
+ * @param {Object}   [options]  options to pass to the underlying reader
+ * @param {Function} done       callback that is invoked with (err, result, parseContext)
+ *                              once the import completes
+ */
+DmnModdle.prototype.fromXML = function(xmlStr, typeName, options, done) {
+
+  if (!(0,min_dash__WEBPACK_IMPORTED_MODULE_1__.isString)(typeName)) {
+    done = options;
+    options = typeName;
+    typeName = 'dmn:Definitions';
+  }
+
+  if ((0,min_dash__WEBPACK_IMPORTED_MODULE_1__.isFunction)(options)) {
+    done = options;
+    options = {};
+  }
+
+  var reader = new moddle_xml__WEBPACK_IMPORTED_MODULE_2__.Reader((0,min_dash__WEBPACK_IMPORTED_MODULE_1__.assign)({ model: this, lax: true }, options));
+  var rootHandler = reader.handler(typeName);
+
+  reader.fromXML(xmlStr, rootHandler, done);
+};
+
+
+/**
+ * Serializes a DMN object tree to XML.
+ *
+ * @param {String}   element    the root element, typically an instance of `Definitions`
+ * @param {Object}   [options]  to pass to the underlying writer
+ * @param {Function} done       callback invoked with (err, xmlStr) once the import completes
+ */
+DmnModdle.prototype.toXML = function(element, options, done) {
+
+  if ((0,min_dash__WEBPACK_IMPORTED_MODULE_1__.isFunction)(options)) {
+    done = options;
+    options = {};
+  }
+
+  var writer = new moddle_xml__WEBPACK_IMPORTED_MODULE_2__.Writer(options);
+
+  var result;
+  var err;
+
+  try {
+    result = writer.toXML(element);
+  } catch (e) {
+    err = e;
+  }
+
+  return done(err, result);
+};
+
+var name = "DC";
+var prefix = "dc";
+var uri = "http://www.omg.org/spec/DMN/20180521/DC/";
+var types = [
+	{
+		name: "Dimension",
+		properties: [
+			{
+				name: "width",
+				isAttr: true,
+				type: "Real"
+			},
+			{
+				name: "height",
+				isAttr: true,
+				type: "Real"
+			}
+		]
+	},
+	{
+		name: "Bounds",
+		properties: [
+			{
+				name: "height",
+				isAttr: true,
+				type: "Real"
+			},
+			{
+				name: "width",
+				isAttr: true,
+				type: "Real"
+			},
+			{
+				name: "x",
+				isAttr: true,
+				type: "Real"
+			},
+			{
+				name: "y",
+				isAttr: true,
+				type: "Real"
+			}
+		]
+	},
+	{
+		name: "Point",
+		properties: [
+			{
+				name: "x",
+				isAttr: true,
+				type: "Real"
+			},
+			{
+				name: "y",
+				isAttr: true,
+				type: "Real"
+			}
+		]
+	},
+	{
+		name: "Color",
+		properties: [
+			{
+				name: "red",
+				type: "UML_Standard_Profile.mdzip:eee_1045467100323_917313_65"
+			},
+			{
+				name: "green",
+				type: "UML_Standard_Profile.mdzip:eee_1045467100323_917313_65"
+			},
+			{
+				name: "blue",
+				type: "UML_Standard_Profile.mdzip:eee_1045467100323_917313_65"
+			}
+		]
+	}
+];
+var associations = [
+];
+var enumerations = [
+	{
+		name: "AlignmentKind",
+		literalValues: [
+			{
+				name: "start"
+			},
+			{
+				name: "center"
+			},
+			{
+				name: "end"
+			}
+		]
+	}
+];
+var DcPackage = {
+	name: name,
+	prefix: prefix,
+	uri: uri,
+	types: types,
+	associations: associations,
+	enumerations: enumerations
+};
+
+var name$1 = "DI";
+var prefix$1 = "di";
+var uri$1 = "http://www.omg.org/spec/DMN/20180521/DI/";
+var types$1 = [
+	{
+		name: "DiagramElement",
+		isAbstract: true,
+		properties: [
+			{
+				name: "id",
+				isAttr: true,
+				isId: true,
+				type: "String"
+			},
+			{
+				name: "style",
+				isReference: true,
+				type: "Style",
+				xml: {
+					serialize: "property"
+				}
+			},
+			{
+				name: "sharedStyle",
+				isReference: true,
+				isVirtual: true,
+				type: "Style"
+			}
+		]
+	},
+	{
+		name: "Diagram",
+		superClass: [
+			"DiagramElement"
+		],
+		properties: [
+			{
+				name: "name",
+				isAttr: true,
+				type: "String"
+			},
+			{
+				name: "documentation",
+				isAttr: true,
+				type: "String"
+			},
+			{
+				name: "resolution",
+				isAttr: true,
+				type: "Real"
+			}
+		]
+	},
+	{
+		name: "Shape",
+		isAbstract: true,
+		properties: [
+			{
+				name: "bounds",
+				type: "dc:Bounds"
+			}
+		],
+		superClass: [
+			"DiagramElement"
+		]
+	},
+	{
+		name: "Edge",
+		isAbstract: true,
+		properties: [
+			{
+				name: "waypoint",
+				type: "dc:Point",
+				isMany: true,
+				xml: {
+					serialize: "property"
+				}
+			}
+		],
+		superClass: [
+			"DiagramElement"
+		]
+	},
+	{
+		name: "Style",
+		isAbstract: true,
+		properties: [
+			{
+				name: "id",
+				isAttr: true,
+				isId: true,
+				type: "String"
+			}
+		]
+	}
+];
+var associations$1 = [
+];
+var enumerations$1 = [
+];
+var xml = {
+	tagAlias: "lowerCase"
+};
+var DiPackage = {
+	name: name$1,
+	prefix: prefix$1,
+	uri: uri$1,
+	types: types$1,
+	associations: associations$1,
+	enumerations: enumerations$1,
+	xml: xml
+};
+
+var name$2 = "DMN";
+var prefix$2 = "dmn";
+var uri$2 = "https://www.omg.org/spec/DMN/20191111/MODEL/";
+var types$2 = [
+	{
+		name: "AuthorityRequirement",
+		superClass: [
+			"DMNElement"
+		],
+		properties: [
+			{
+				name: "requiredAuthority",
+				type: "DMNElementReference",
+				xml: {
+					serialize: "property"
+				}
+			},
+			{
+				name: "requiredDecision",
+				type: "DMNElementReference",
+				xml: {
+					serialize: "property"
+				}
+			},
+			{
+				name: "requiredInput",
+				type: "DMNElementReference",
+				xml: {
+					serialize: "property"
+				}
+			}
+		]
+	},
+	{
+		name: "ItemDefinition",
+		superClass: [
+			"NamedElement"
+		],
+		properties: [
+			{
+				name: "typeRef",
+				type: "String"
+			},
+			{
+				name: "allowedValues",
+				type: "UnaryTests",
+				xml: {
+					serialize: "property"
+				}
+			},
+			{
+				name: "typeLanguage",
+				type: "String",
+				isAttr: true
+			},
+			{
+				name: "itemComponent",
+				type: "ItemDefinition",
+				isMany: true,
+				xml: {
+					serialize: "property"
+				}
+			},
+			{
+				name: "functionItem",
+				type: "FunctionItem"
+			},
+			{
+				name: "isCollection",
+				isAttr: true,
+				type: "Boolean"
+			}
+		]
+	},
+	{
+		name: "Definitions",
+		superClass: [
+			"NamedElement"
+		],
+		properties: [
+			{
+				name: "import",
+				type: "Import",
+				isMany: true
+			},
+			{
+				name: "itemDefinition",
+				type: "ItemDefinition",
+				isMany: true
+			},
+			{
+				name: "drgElement",
+				type: "DRGElement",
+				isMany: true
+			},
+			{
+				name: "artifact",
+				type: "Artifact",
+				isMany: true
+			},
+			{
+				name: "elementCollection",
+				type: "ElementCollection",
+				isMany: true
+			},
+			{
+				name: "businessContextElement",
+				type: "BusinessContextElement",
+				isMany: true
+			},
+			{
+				name: "namespace",
+				type: "String",
+				isAttr: true
+			},
+			{
+				name: "expressionLanguage",
+				type: "String",
+				isAttr: true
+			},
+			{
+				name: "typeLanguage",
+				type: "String",
+				isAttr: true
+			},
+			{
+				name: "exporter",
+				isAttr: true,
+				type: "String"
+			},
+			{
+				name: "exporterVersion",
+				isAttr: true,
+				type: "String"
+			},
+			{
+				name: "dmnDI",
+				type: "dmndi:DMNDI"
+			}
+		]
+	},
+	{
+		name: "KnowledgeSource",
+		superClass: [
+			"DRGElement"
+		],
+		properties: [
+			{
+				name: "authorityRequirement",
+				type: "AuthorityRequirement",
+				isMany: true
+			},
+			{
+				name: "type",
+				type: "String"
+			},
+			{
+				name: "owner",
+				type: "DMNElementReference",
+				xml: {
+					serialize: "property"
+				}
+			},
+			{
+				name: "locationURI",
+				type: "String",
+				isAttr: true
+			}
+		]
+	},
+	{
+		name: "DecisionRule",
+		superClass: [
+			"DMNElement"
+		],
+		properties: [
+			{
+				name: "inputEntry",
+				type: "UnaryTests",
+				isMany: true,
+				xml: {
+					serialize: "property"
+				}
+			},
+			{
+				name: "outputEntry",
+				type: "LiteralExpression",
+				isMany: true,
+				xml: {
+					serialize: "property"
+				}
+			},
+			{
+				name: "annotationEntry",
+				type: "RuleAnnotation",
+				isMany: true,
+				xml: {
+					serialize: "property"
+				}
+			}
+		]
+	},
+	{
+		name: "Expression",
+		isAbstract: true,
+		superClass: [
+			"DMNElement"
+		],
+		properties: [
+			{
+				name: "typeRef",
+				isAttr: true,
+				type: "String"
+			}
+		]
+	},
+	{
+		name: "InformationItem",
+		superClass: [
+			"NamedElement"
+		],
+		properties: [
+			{
+				name: "typeRef",
+				isAttr: true,
+				type: "String"
+			}
+		]
+	},
+	{
+		name: "Decision",
+		superClass: [
+			"DRGElement"
+		],
+		properties: [
+			{
+				name: "question",
+				type: "String",
+				xml: {
+					serialize: "property"
+				}
+			},
+			{
+				name: "allowedAnswers",
+				type: "String",
+				xml: {
+					serialize: "property"
+				}
+			},
+			{
+				name: "variable",
+				type: "InformationItem",
+				xml: {
+					serialize: "property"
+				}
+			},
+			{
+				name: "informationRequirement",
+				type: "InformationRequirement",
+				isMany: true
+			},
+			{
+				name: "knowledgeRequirement",
+				type: "KnowledgeRequirement",
+				isMany: true
+			},
+			{
+				name: "authorityRequirement",
+				type: "AuthorityRequirement",
+				isMany: true
+			},
+			{
+				name: "supportedObjective",
+				isMany: true,
+				type: "DMNElementReference",
+				xml: {
+					serialize: "property"
+				}
+			},
+			{
+				name: "impactedPerformanceIndicator",
+				type: "DMNElementReference",
+				isMany: true,
+				xml: {
+					serialize: "property"
+				}
+			},
+			{
+				name: "decisionMaker",
+				type: "DMNElementReference",
+				isMany: true,
+				xml: {
+					serialize: "property"
+				}
+			},
+			{
+				name: "decisionOwner",
+				type: "DMNElementReference",
+				isMany: true,
+				xml: {
+					serialize: "property"
+				}
+			},
+			{
+				name: "usingProcess",
+				isMany: true,
+				type: "DMNElementReference",
+				xml: {
+					serialize: "property"
+				}
+			},
+			{
+				name: "usingTask",
+				isMany: true,
+				type: "DMNElementReference",
+				xml: {
+					serialize: "property"
+				}
+			},
+			{
+				name: "decisionLogic",
+				type: "Expression"
+			}
+		]
+	},
+	{
+		name: "Invocation",
+		superClass: [
+			"Expression"
+		],
+		properties: [
+			{
+				name: "calledFunction",
+				type: "Expression"
+			},
+			{
+				name: "binding",
+				type: "Binding",
+				isMany: true
+			}
+		]
+	},
+	{
+		name: "OrganisationalUnit",
+		superClass: [
+			"BusinessContextElement"
+		],
+		properties: [
+			{
+				name: "decisionMade",
+				type: "Decision",
+				isReference: true,
+				isMany: true
+			},
+			{
+				name: "decisionOwned",
+				type: "Decision",
+				isReference: true,
+				isMany: true
+			}
+		]
+	},
+	{
+		name: "Import",
+		superClass: [
+			"NamedElement"
+		],
+		properties: [
+			{
+				name: "importType",
+				type: "String",
+				isAttr: true
+			},
+			{
+				name: "locationURI",
+				type: "String",
+				isAttr: true
+			},
+			{
+				name: "namespace",
+				type: "String",
+				isAttr: true
+			}
+		]
+	},
+	{
+		name: "InformationRequirement",
+		superClass: [
+			"DMNElement"
+		],
+		properties: [
+			{
+				name: "requiredDecision",
+				type: "DMNElementReference",
+				xml: {
+					serialize: "property"
+				}
+			},
+			{
+				name: "requiredInput",
+				type: "DMNElementReference",
+				xml: {
+					serialize: "property"
+				}
+			}
+		]
+	},
+	{
+		name: "ElementCollection",
+		superClass: [
+			"NamedElement"
+		],
+		properties: [
+			{
+				name: "drgElement",
+				type: "DMNElementReference",
+				isMany: true,
+				xml: {
+					serialize: "property"
+				}
+			}
+		]
+	},
+	{
+		name: "DRGElement",
+		isAbstract: true,
+		superClass: [
+			"NamedElement"
+		],
+		properties: [
+		]
+	},
+	{
+		name: "InputData",
+		superClass: [
+			"DRGElement"
+		],
+		properties: [
+			{
+				name: "variable",
+				type: "InformationItem",
+				xml: {
+					serialize: "property"
+				}
+			}
+		]
+	},
+	{
+		name: "DMNElement",
+		isAbstract: true,
+		properties: [
+			{
+				name: "description",
+				type: "String"
+			},
+			{
+				name: "extensionElements",
+				type: "ExtensionElements"
+			},
+			{
+				name: "id",
+				type: "String",
+				isAttr: true,
+				isId: true
+			},
+			{
+				name: "extensionAttribute",
+				type: "ExtensionAttribute",
+				isMany: true
+			},
+			{
+				name: "label",
+				isAttr: true,
+				type: "String"
+			}
+		]
+	},
+	{
+		name: "InputClause",
+		superClass: [
+			"DMNElement"
+		],
+		properties: [
+			{
+				name: "inputExpression",
+				type: "LiteralExpression",
+				xml: {
+					serialize: "property"
+				}
+			},
+			{
+				name: "inputValues",
+				type: "UnaryTests",
+				xml: {
+					serialize: "property"
+				}
+			}
+		]
+	},
+	{
+		name: "DecisionTable",
+		superClass: [
+			"Expression"
+		],
+		properties: [
+			{
+				name: "input",
+				type: "InputClause",
+				isMany: true,
+				xml: {
+					serialize: "property"
+				}
+			},
+			{
+				name: "output",
+				type: "OutputClause",
+				isMany: true,
+				xml: {
+					serialize: "property"
+				}
+			},
+			{
+				name: "annotation",
+				type: "RuleAnnotationClause",
+				isMany: true,
+				xml: {
+					serialize: "property"
+				}
+			},
+			{
+				name: "rule",
+				type: "DecisionRule",
+				isMany: true,
+				xml: {
+					serialize: "property"
+				}
+			},
+			{
+				name: "hitPolicy",
+				type: "HitPolicy",
+				isAttr: true,
+				"default": "UNIQUE"
+			},
+			{
+				name: "aggregation",
+				type: "BuiltinAggregator",
+				isAttr: true
+			},
+			{
+				name: "preferredOrientation",
+				type: "DecisionTableOrientation",
+				isAttr: true
+			},
+			{
+				name: "outputLabel",
+				isAttr: true,
+				type: "String"
+			}
+		]
+	},
+	{
+		name: "LiteralExpression",
+		superClass: [
+			"Expression"
+		],
+		properties: [
+			{
+				name: "expressionLanguage",
+				type: "String",
+				isAttr: true
+			},
+			{
+				name: "text",
+				type: "String"
+			},
+			{
+				name: "importedValues",
+				type: "ImportedValues"
+			}
+		]
+	},
+	{
+		name: "Binding",
+		properties: [
+			{
+				name: "parameter",
+				type: "InformationItem",
+				xml: {
+					serialize: "property"
+				}
+			},
+			{
+				name: "bindingFormula",
+				type: "Expression"
+			}
+		]
+	},
+	{
+		name: "KnowledgeRequirement",
+		superClass: [
+			"DMNElement"
+		],
+		properties: [
+			{
+				name: "requiredKnowledge",
+				type: "DMNElementReference",
+				xml: {
+					serialize: "property"
+				}
+			}
+		]
+	},
+	{
+		name: "BusinessKnowledgeModel",
+		superClass: [
+			"Invocable"
+		],
+		properties: [
+			{
+				name: "encapsulatedLogic",
+				type: "FunctionDefinition",
+				xml: {
+					serialize: "property"
+				}
+			},
+			{
+				name: "knowledgeRequirement",
+				type: "KnowledgeRequirement",
+				isMany: true
+			},
+			{
+				name: "authorityRequirement",
+				type: "AuthorityRequirement",
+				isMany: true
+			}
+		]
+	},
+	{
+		name: "BusinessContextElement",
+		isAbstract: true,
+		superClass: [
+			"NamedElement"
+		],
+		properties: [
+			{
+				name: "URI",
+				type: "String",
+				isAttr: true
+			}
+		]
+	},
+	{
+		name: "PerformanceIndicator",
+		superClass: [
+			"BusinessContextElement"
+		],
+		properties: [
+			{
+				name: "impactingDecision",
+				type: "DMNElementReference",
+				isMany: true,
+				xml: {
+					serialize: "property"
+				}
+			}
+		]
+	},
+	{
+		name: "FunctionDefinition",
+		superClass: [
+			"Expression"
+		],
+		properties: [
+			{
+				name: "formalParameter",
+				type: "InformationItem",
+				isMany: true,
+				xml: {
+					serialize: "property"
+				}
+			},
+			{
+				name: "body",
+				type: "Expression"
+			},
+			{
+				name: "kind",
+				type: "FunctionKind",
+				isAttr: true
+			}
+		]
+	},
+	{
+		name: "Context",
+		superClass: [
+			"Expression"
+		],
+		properties: [
+			{
+				name: "contextEntry",
+				type: "ContextEntry",
+				isMany: true
+			}
+		]
+	},
+	{
+		name: "ContextEntry",
+		superClass: [
+			"DMNElement"
+		],
+		properties: [
+			{
+				name: "variable",
+				type: "InformationItem",
+				xml: {
+					serialize: "property"
+				}
+			},
+			{
+				name: "value",
+				type: "Expression"
+			}
+		]
+	},
+	{
+		name: "List",
+		superClass: [
+			"Expression"
+		],
+		properties: [
+			{
+				name: "elements",
+				isMany: true,
+				type: "Expression"
+			}
+		]
+	},
+	{
+		name: "Relation",
+		superClass: [
+			"Expression"
+		],
+		properties: [
+			{
+				name: "column",
+				type: "InformationItem",
+				isMany: true,
+				xml: {
+					serialize: "property"
+				}
+			},
+			{
+				name: "row",
+				type: "List",
+				isMany: true,
+				xml: {
+					serialize: "property"
+				}
+			}
+		]
+	},
+	{
+		name: "OutputClause",
+		superClass: [
+			"DMNElement"
+		],
+		properties: [
+			{
+				name: "outputValues",
+				type: "UnaryTests",
+				xml: {
+					serialize: "property"
+				}
+			},
+			{
+				name: "defaultOutputEntry",
+				type: "LiteralExpression",
+				xml: {
+					serialize: "property"
+				}
+			},
+			{
+				name: "name",
+				isAttr: true,
+				type: "String"
+			},
+			{
+				name: "typeRef",
+				isAttr: true,
+				type: "String"
+			}
+		]
+	},
+	{
+		name: "UnaryTests",
+		superClass: [
+			"Expression"
+		],
+		properties: [
+			{
+				name: "text",
+				type: "String"
+			},
+			{
+				name: "expressionLanguage",
+				type: "String",
+				isAttr: true
+			}
+		]
+	},
+	{
+		name: "NamedElement",
+		isAbstract: true,
+		superClass: [
+			"DMNElement"
+		],
+		properties: [
+			{
+				name: "name",
+				isAttr: true,
+				type: "String"
+			}
+		]
+	},
+	{
+		name: "ImportedValues",
+		superClass: [
+			"Import"
+		],
+		properties: [
+			{
+				name: "importedElement",
+				type: "String"
+			},
+			{
+				name: "expressionLanguage",
+				type: "String",
+				isAttr: true
+			}
+		]
+	},
+	{
+		name: "DecisionService",
+		superClass: [
+			"Invocable"
+		],
+		properties: [
+			{
+				name: "outputDecision",
+				type: "DMNElementReference",
+				isMany: true,
+				xml: {
+					serialize: "property"
+				}
+			},
+			{
+				name: "encapsulatedDecision",
+				type: "DMNElementReference",
+				isMany: true,
+				xml: {
+					serialize: "property"
+				}
+			},
+			{
+				name: "inputDecision",
+				type: "DMNElementReference",
+				isMany: true,
+				xml: {
+					serialize: "property"
+				}
+			},
+			{
+				name: "inputData",
+				type: "DMNElementReference",
+				isMany: true,
+				xml: {
+					serialize: "property"
+				}
+			}
+		]
+	},
+	{
+		name: "ExtensionElements",
+		properties: [
+			{
+				name: "values",
+				type: "Element",
+				isMany: true
+			}
+		]
+	},
+	{
+		name: "ExtensionAttribute",
+		properties: [
+			{
+				name: "value",
+				type: "Element"
+			},
+			{
+				name: "valueRef",
+				type: "Element",
+				isAttr: true,
+				isReference: true
+			},
+			{
+				name: "name",
+				isAttr: true,
+				type: "String"
+			}
+		]
+	},
+	{
+		name: "Element",
+		isAbstract: true,
+		properties: [
+			{
+				name: "extensionAttribute",
+				type: "ExtensionAttribute",
+				isAttr: true,
+				isReference: true
+			},
+			{
+				name: "elements",
+				type: "ExtensionElements",
+				isAttr: true,
+				isReference: true
+			}
+		]
+	},
+	{
+		name: "Artifact",
+		isAbstract: true,
+		superClass: [
+			"DMNElement"
+		],
+		properties: [
+		]
+	},
+	{
+		name: "Association",
+		superClass: [
+			"Artifact"
+		],
+		properties: [
+			{
+				name: "sourceRef",
+				type: "DMNElementReference",
+				xml: {
+					serialize: "property"
+				}
+			},
+			{
+				name: "targetRef",
+				type: "DMNElementReference",
+				xml: {
+					serialize: "property"
+				}
+			},
+			{
+				name: "associationDirection",
+				type: "AssociationDirection",
+				isAttr: true
+			}
+		]
+	},
+	{
+		name: "TextAnnotation",
+		superClass: [
+			"Artifact"
+		],
+		properties: [
+			{
+				name: "text",
+				type: "String"
+			},
+			{
+				name: "textFormat",
+				isAttr: true,
+				type: "String",
+				"default": "text/plain"
+			}
+		]
+	},
+	{
+		name: "RuleAnnotationClause",
+		properties: [
+			{
+				name: "name",
+				isAttr: true,
+				type: "String"
+			}
+		]
+	},
+	{
+		name: "RuleAnnotation",
+		properties: [
+			{
+				name: "text",
+				type: "String"
+			}
+		]
+	},
+	{
+		name: "Invocable",
+		isAbstract: true,
+		superClass: [
+			"DRGElement"
+		],
+		properties: [
+			{
+				name: "variable",
+				type: "InformationItem",
+				xml: {
+					serialize: "property"
+				}
+			}
+		]
+	},
+	{
+		name: "Group",
+		superClass: [
+			"Artifact"
+		],
+		properties: [
+			{
+				name: "name",
+				isAttr: true,
+				type: "String"
+			}
+		]
+	},
+	{
+		name: "FunctionItem",
+		superClass: [
+			"DMNElement"
+		],
+		properties: [
+			{
+				name: "parameters",
+				isMany: true,
+				type: "InformationItem",
+				xml: {
+					serialize: "property"
+				}
+			},
+			{
+				name: "outputTypeRef",
+				isAttr: true,
+				type: "String"
+			}
+		]
+	},
+	{
+		name: "DMNElementReference",
+		properties: [
+			{
+				isAttr: true,
+				name: "href",
+				type: "String"
+			}
+		]
+	}
+];
+var enumerations$2 = [
+	{
+		name: "HitPolicy",
+		literalValues: [
+			{
+				name: "UNIQUE"
+			},
+			{
+				name: "FIRST"
+			},
+			{
+				name: "PRIORITY"
+			},
+			{
+				name: "ANY"
+			},
+			{
+				name: "COLLECT"
+			},
+			{
+				name: "RULE ORDER"
+			},
+			{
+				name: "OUTPUT ORDER"
+			}
+		]
+	},
+	{
+		name: "BuiltinAggregator",
+		literalValues: [
+			{
+				name: "SUM"
+			},
+			{
+				name: "COUNT"
+			},
+			{
+				name: "MIN"
+			},
+			{
+				name: "MAX"
+			}
+		]
+	},
+	{
+		name: "DecisionTableOrientation",
+		literalValues: [
+			{
+				name: "Rule-as-Row"
+			},
+			{
+				name: "Rule-as-Column"
+			},
+			{
+				name: "CrossTable"
+			}
+		]
+	},
+	{
+		name: "AssociationDirection",
+		literalValues: [
+			{
+				name: "None"
+			},
+			{
+				name: "One"
+			},
+			{
+				name: "Both"
+			}
+		]
+	},
+	{
+		name: "FunctionKind",
+		literalValues: [
+			{
+				name: "FEEL"
+			},
+			{
+				name: "Java"
+			},
+			{
+				name: "PMML"
+			}
+		]
+	}
+];
+var associations$2 = [
+];
+var xml$1 = {
+	tagAlias: "lowerCase"
+};
+var DmnPackage = {
+	name: name$2,
+	prefix: prefix$2,
+	uri: uri$2,
+	types: types$2,
+	enumerations: enumerations$2,
+	associations: associations$2,
+	xml: xml$1
+};
+
+var name$3 = "DMNDI";
+var prefix$3 = "dmndi";
+var uri$3 = "https://www.omg.org/spec/DMN/20191111/DMNDI/";
+var types$3 = [
+	{
+		name: "DMNDI",
+		properties: [
+			{
+				name: "diagrams",
+				type: "DMNDiagram",
+				isMany: true
+			},
+			{
+				name: "styles",
+				type: "DMNStyle",
+				isMany: true
+			}
+		]
+	},
+	{
+		name: "DMNStyle",
+		superClass: [
+			"di:Style"
+		],
+		properties: [
+			{
+				name: "fillColor",
+				type: "dc:Color",
+				isAttr: true
+			},
+			{
+				name: "strokeColor",
+				type: "dc:Color",
+				isAttr: true
+			},
+			{
+				name: "fontColor",
+				type: "dc:Color",
+				isAttr: true
+			},
+			{
+				name: "fontSize",
+				isAttr: true,
+				type: "Real"
+			},
+			{
+				name: "fontFamily",
+				isAttr: true,
+				type: "String"
+			},
+			{
+				name: "fontItalic",
+				isAttr: true,
+				type: "Boolean"
+			},
+			{
+				name: "fontBold",
+				isAttr: true,
+				type: "Boolean"
+			},
+			{
+				name: "fontUnderline",
+				isAttr: true,
+				type: "Boolean"
+			},
+			{
+				name: "fontStrikeThrough",
+				isAttr: true,
+				type: "Boolean"
+			},
+			{
+				name: "labelHorizontalAlignment",
+				type: "dc:AlignmentKind",
+				isAttr: true
+			},
+			{
+				name: "labelVerticalAlignment",
+				type: "dc:AlignmentKind",
+				isAttr: true
+			}
+		]
+	},
+	{
+		name: "DMNDiagram",
+		superClass: [
+			"di:Diagram"
+		],
+		properties: [
+			{
+				name: "dmnElementRef",
+				type: "dmn:DMNElement",
+				isAttr: true,
+				isReference: true
+			},
+			{
+				name: "size",
+				type: "Size"
+			},
+			{
+				name: "localStyle",
+				type: "DMNStyle",
+				isVirtual: true
+			},
+			{
+				name: "sharedStyle",
+				type: "DMNStyle",
+				isVirtual: true,
+				isReference: true,
+				redefines: "di:DiagramElement#sharedStyle"
+			},
+			{
+				name: "diagramElements",
+				type: "DMNDiagramElement",
+				isMany: true
+			}
+		]
+	},
+	{
+		name: "DMNDiagramElement",
+		isAbstract: true,
+		superClass: [
+			"di:DiagramElement"
+		],
+		properties: [
+			{
+				name: "dmnElementRef",
+				type: "dmn:DMNElement",
+				isAttr: true,
+				isReference: true
+			},
+			{
+				name: "sharedStyle",
+				type: "DMNStyle",
+				isVirtual: true,
+				isReference: true,
+				redefines: "di:DiagramElement#sharedStyle"
+			},
+			{
+				name: "localStyle",
+				type: "DMNStyle",
+				isVirtual: true
+			},
+			{
+				name: "label",
+				type: "DMNLabel"
+			}
+		]
+	},
+	{
+		name: "DMNLabel",
+		superClass: [
+			"di:Shape"
+		],
+		properties: [
+			{
+				name: "text",
+				type: "Text"
+			}
+		]
+	},
+	{
+		name: "DMNShape",
+		superClass: [
+			"di:Shape",
+			"DMNDiagramElement"
+		],
+		properties: [
+			{
+				name: "isListedInputData",
+				isAttr: true,
+				type: "Boolean"
+			},
+			{
+				name: "decisionServiceDividerLine",
+				type: "DMNDecisionServiceDividerLine"
+			},
+			{
+				name: "isCollapsed",
+				isAttr: true,
+				type: "Boolean"
+			}
+		]
+	},
+	{
+		name: "DMNEdge",
+		superClass: [
+			"di:Edge",
+			"DMNDiagramElement"
+		],
+		properties: [
+			{
+				name: "sourceElement",
+				type: "DMNDiagramElement",
+				isAttr: true,
+				isReference: true
+			},
+			{
+				name: "targetElement",
+				type: "DMNDiagramElement",
+				isAttr: true,
+				isReference: true
+			}
+		]
+	},
+	{
+		name: "DMNDecisionServiceDividerLine",
+		superClass: [
+			"di:Edge"
+		]
+	},
+	{
+		name: "Text",
+		properties: [
+			{
+				name: "text",
+				isBody: true,
+				type: "String"
+			}
+		]
+	},
+	{
+		name: "Size",
+		superClass: [
+			"dc:Dimension"
+		]
+	}
+];
+var associations$3 = [
+];
+var enumerations$3 = [
+];
+var DmnDiPackage = {
+	name: name$3,
+	prefix: prefix$3,
+	uri: uri$3,
+	types: types$3,
+	associations: associations$3,
+	enumerations: enumerations$3
+};
+
+var name$4 = "bpmn.io DI for DMN";
+var uri$4 = "http://bpmn.io/schema/dmn/biodi/2.0";
+var prefix$4 = "biodi";
+var xml$2 = {
+	tagAlias: "lowerCase"
+};
+var types$4 = [
+	{
+		name: "DecisionTable",
+		isAbstract: true,
+		"extends": [
+			"dmn:DecisionTable"
+		],
+		properties: [
+			{
+				name: "annotationsWidth",
+				isAttr: true,
+				type: "Integer"
+			}
+		]
+	},
+	{
+		name: "OutputClause",
+		isAbstract: true,
+		"extends": [
+			"dmn:OutputClause"
+		],
+		properties: [
+			{
+				name: "width",
+				isAttr: true,
+				type: "Integer"
+			}
+		]
+	},
+	{
+		name: "InputClause",
+		isAbstract: true,
+		"extends": [
+			"dmn:InputClause"
+		],
+		properties: [
+			{
+				name: "width",
+				isAttr: true,
+				type: "Integer"
+			}
+		]
+	}
+];
+var BioDiPackage = {
+	name: name$4,
+	uri: uri$4,
+	prefix: prefix$4,
+	xml: xml$2,
+	types: types$4
+};
+
+var packages = {
+  dc: DcPackage,
+  di: DiPackage,
+  dmn: DmnPackage,
+  dmndi: DmnDiPackage,
+  biodi: BioDiPackage
+};
+
+function simple(additionalPackages, options) {
+  var pks = (0,min_dash__WEBPACK_IMPORTED_MODULE_1__.assign)({}, packages, additionalPackages);
+
+  return new DmnModdle(pks, options);
+}
+
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (simple);
+
+
+/***/ }),
+
 /***/ "./node_modules/ieee754/index.js":
 /*!***************************************!*\
   !*** ./node_modules/ieee754/index.js ***!
@@ -3684,6 +5738,3307 @@ exports.write = function (buffer, value, offset, isLE, mLen, nBytes) {
 
   buffer[offset + i - d] |= s * 128
 }
+
+
+/***/ }),
+
+/***/ "./node_modules/min-dash/dist/index.esm.js":
+/*!*************************************************!*\
+  !*** ./node_modules/min-dash/dist/index.esm.js ***!
+  \*************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "flatten": () => (/* binding */ flatten),
+/* harmony export */   "find": () => (/* binding */ find),
+/* harmony export */   "findIndex": () => (/* binding */ findIndex),
+/* harmony export */   "filter": () => (/* binding */ filter),
+/* harmony export */   "forEach": () => (/* binding */ forEach),
+/* harmony export */   "without": () => (/* binding */ without),
+/* harmony export */   "reduce": () => (/* binding */ reduce),
+/* harmony export */   "every": () => (/* binding */ every),
+/* harmony export */   "some": () => (/* binding */ some),
+/* harmony export */   "map": () => (/* binding */ map),
+/* harmony export */   "keys": () => (/* binding */ keys),
+/* harmony export */   "size": () => (/* binding */ size),
+/* harmony export */   "values": () => (/* binding */ values),
+/* harmony export */   "groupBy": () => (/* binding */ groupBy),
+/* harmony export */   "uniqueBy": () => (/* binding */ uniqueBy),
+/* harmony export */   "unionBy": () => (/* binding */ unionBy),
+/* harmony export */   "sortBy": () => (/* binding */ sortBy),
+/* harmony export */   "matchPattern": () => (/* binding */ matchPattern),
+/* harmony export */   "debounce": () => (/* binding */ debounce),
+/* harmony export */   "throttle": () => (/* binding */ throttle),
+/* harmony export */   "bind": () => (/* binding */ bind),
+/* harmony export */   "isUndefined": () => (/* binding */ isUndefined),
+/* harmony export */   "isDefined": () => (/* binding */ isDefined),
+/* harmony export */   "isNil": () => (/* binding */ isNil),
+/* harmony export */   "isArray": () => (/* binding */ isArray),
+/* harmony export */   "isObject": () => (/* binding */ isObject),
+/* harmony export */   "isNumber": () => (/* binding */ isNumber),
+/* harmony export */   "isFunction": () => (/* binding */ isFunction),
+/* harmony export */   "isString": () => (/* binding */ isString),
+/* harmony export */   "ensureArray": () => (/* binding */ ensureArray),
+/* harmony export */   "has": () => (/* binding */ has),
+/* harmony export */   "assign": () => (/* binding */ assign),
+/* harmony export */   "pick": () => (/* binding */ pick),
+/* harmony export */   "omit": () => (/* binding */ omit),
+/* harmony export */   "merge": () => (/* binding */ merge)
+/* harmony export */ });
+/**
+ * Flatten array, one level deep.
+ *
+ * @param {Array<?>} arr
+ *
+ * @return {Array<?>}
+ */
+function flatten(arr) {
+  return Array.prototype.concat.apply([], arr);
+}
+
+var nativeToString = Object.prototype.toString;
+var nativeHasOwnProperty = Object.prototype.hasOwnProperty;
+function isUndefined(obj) {
+  return obj === undefined;
+}
+function isDefined(obj) {
+  return obj !== undefined;
+}
+function isNil(obj) {
+  return obj == null;
+}
+function isArray(obj) {
+  return nativeToString.call(obj) === '[object Array]';
+}
+function isObject(obj) {
+  return nativeToString.call(obj) === '[object Object]';
+}
+function isNumber(obj) {
+  return nativeToString.call(obj) === '[object Number]';
+}
+function isFunction(obj) {
+  var tag = nativeToString.call(obj);
+  return tag === '[object Function]' || tag === '[object AsyncFunction]' || tag === '[object GeneratorFunction]' || tag === '[object AsyncGeneratorFunction]' || tag === '[object Proxy]';
+}
+function isString(obj) {
+  return nativeToString.call(obj) === '[object String]';
+}
+/**
+ * Ensure collection is an array.
+ *
+ * @param {Object} obj
+ */
+
+function ensureArray(obj) {
+  if (isArray(obj)) {
+    return;
+  }
+
+  throw new Error('must supply array');
+}
+/**
+ * Return true, if target owns a property with the given key.
+ *
+ * @param {Object} target
+ * @param {String} key
+ *
+ * @return {Boolean}
+ */
+
+function has(target, key) {
+  return nativeHasOwnProperty.call(target, key);
+}
+
+/**
+ * Find element in collection.
+ *
+ * @param  {Array|Object} collection
+ * @param  {Function|Object} matcher
+ *
+ * @return {Object}
+ */
+
+function find(collection, matcher) {
+  matcher = toMatcher(matcher);
+  var match;
+  forEach(collection, function (val, key) {
+    if (matcher(val, key)) {
+      match = val;
+      return false;
+    }
+  });
+  return match;
+}
+/**
+ * Find element index in collection.
+ *
+ * @param  {Array|Object} collection
+ * @param  {Function} matcher
+ *
+ * @return {Object}
+ */
+
+function findIndex(collection, matcher) {
+  matcher = toMatcher(matcher);
+  var idx = isArray(collection) ? -1 : undefined;
+  forEach(collection, function (val, key) {
+    if (matcher(val, key)) {
+      idx = key;
+      return false;
+    }
+  });
+  return idx;
+}
+/**
+ * Find element in collection.
+ *
+ * @param  {Array|Object} collection
+ * @param  {Function} matcher
+ *
+ * @return {Array} result
+ */
+
+function filter(collection, matcher) {
+  var result = [];
+  forEach(collection, function (val, key) {
+    if (matcher(val, key)) {
+      result.push(val);
+    }
+  });
+  return result;
+}
+/**
+ * Iterate over collection; returning something
+ * (non-undefined) will stop iteration.
+ *
+ * @param  {Array|Object} collection
+ * @param  {Function} iterator
+ *
+ * @return {Object} return result that stopped the iteration
+ */
+
+function forEach(collection, iterator) {
+  var val, result;
+
+  if (isUndefined(collection)) {
+    return;
+  }
+
+  var convertKey = isArray(collection) ? toNum : identity;
+
+  for (var key in collection) {
+    if (has(collection, key)) {
+      val = collection[key];
+      result = iterator(val, convertKey(key));
+
+      if (result === false) {
+        return val;
+      }
+    }
+  }
+}
+/**
+ * Return collection without element.
+ *
+ * @param  {Array} arr
+ * @param  {Function} matcher
+ *
+ * @return {Array}
+ */
+
+function without(arr, matcher) {
+  if (isUndefined(arr)) {
+    return [];
+  }
+
+  ensureArray(arr);
+  matcher = toMatcher(matcher);
+  return arr.filter(function (el, idx) {
+    return !matcher(el, idx);
+  });
+}
+/**
+ * Reduce collection, returning a single result.
+ *
+ * @param  {Object|Array} collection
+ * @param  {Function} iterator
+ * @param  {Any} result
+ *
+ * @return {Any} result returned from last iterator
+ */
+
+function reduce(collection, iterator, result) {
+  forEach(collection, function (value, idx) {
+    result = iterator(result, value, idx);
+  });
+  return result;
+}
+/**
+ * Return true if every element in the collection
+ * matches the criteria.
+ *
+ * @param  {Object|Array} collection
+ * @param  {Function} matcher
+ *
+ * @return {Boolean}
+ */
+
+function every(collection, matcher) {
+  return !!reduce(collection, function (matches, val, key) {
+    return matches && matcher(val, key);
+  }, true);
+}
+/**
+ * Return true if some elements in the collection
+ * match the criteria.
+ *
+ * @param  {Object|Array} collection
+ * @param  {Function} matcher
+ *
+ * @return {Boolean}
+ */
+
+function some(collection, matcher) {
+  return !!find(collection, matcher);
+}
+/**
+ * Transform a collection into another collection
+ * by piping each member through the given fn.
+ *
+ * @param  {Object|Array}   collection
+ * @param  {Function} fn
+ *
+ * @return {Array} transformed collection
+ */
+
+function map(collection, fn) {
+  var result = [];
+  forEach(collection, function (val, key) {
+    result.push(fn(val, key));
+  });
+  return result;
+}
+/**
+ * Get the collections keys.
+ *
+ * @param  {Object|Array} collection
+ *
+ * @return {Array}
+ */
+
+function keys(collection) {
+  return collection && Object.keys(collection) || [];
+}
+/**
+ * Shorthand for `keys(o).length`.
+ *
+ * @param  {Object|Array} collection
+ *
+ * @return {Number}
+ */
+
+function size(collection) {
+  return keys(collection).length;
+}
+/**
+ * Get the values in the collection.
+ *
+ * @param  {Object|Array} collection
+ *
+ * @return {Array}
+ */
+
+function values(collection) {
+  return map(collection, function (val) {
+    return val;
+  });
+}
+/**
+ * Group collection members by attribute.
+ *
+ * @param  {Object|Array} collection
+ * @param  {Function} extractor
+ *
+ * @return {Object} map with { attrValue => [ a, b, c ] }
+ */
+
+function groupBy(collection, extractor) {
+  var grouped = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {};
+  extractor = toExtractor(extractor);
+  forEach(collection, function (val) {
+    var discriminator = extractor(val) || '_';
+    var group = grouped[discriminator];
+
+    if (!group) {
+      group = grouped[discriminator] = [];
+    }
+
+    group.push(val);
+  });
+  return grouped;
+}
+function uniqueBy(extractor) {
+  extractor = toExtractor(extractor);
+  var grouped = {};
+
+  for (var _len = arguments.length, collections = new Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
+    collections[_key - 1] = arguments[_key];
+  }
+
+  forEach(collections, function (c) {
+    return groupBy(c, extractor, grouped);
+  });
+  var result = map(grouped, function (val, key) {
+    return val[0];
+  });
+  return result;
+}
+var unionBy = uniqueBy;
+/**
+ * Sort collection by criteria.
+ *
+ * @param  {Object|Array} collection
+ * @param  {String|Function} extractor
+ *
+ * @return {Array}
+ */
+
+function sortBy(collection, extractor) {
+  extractor = toExtractor(extractor);
+  var sorted = [];
+  forEach(collection, function (value, key) {
+    var disc = extractor(value, key);
+    var entry = {
+      d: disc,
+      v: value
+    };
+
+    for (var idx = 0; idx < sorted.length; idx++) {
+      var d = sorted[idx].d;
+
+      if (disc < d) {
+        sorted.splice(idx, 0, entry);
+        return;
+      }
+    } // not inserted, append (!)
+
+
+    sorted.push(entry);
+  });
+  return map(sorted, function (e) {
+    return e.v;
+  });
+}
+/**
+ * Create an object pattern matcher.
+ *
+ * @example
+ *
+ * const matcher = matchPattern({ id: 1 });
+ *
+ * var element = find(elements, matcher);
+ *
+ * @param  {Object} pattern
+ *
+ * @return {Function} matcherFn
+ */
+
+function matchPattern(pattern) {
+  return function (el) {
+    return every(pattern, function (val, key) {
+      return el[key] === val;
+    });
+  };
+}
+
+function toExtractor(extractor) {
+  return isFunction(extractor) ? extractor : function (e) {
+    return e[extractor];
+  };
+}
+
+function toMatcher(matcher) {
+  return isFunction(matcher) ? matcher : function (e) {
+    return e === matcher;
+  };
+}
+
+function identity(arg) {
+  return arg;
+}
+
+function toNum(arg) {
+  return Number(arg);
+}
+
+/**
+ * Debounce fn, calling it only once if
+ * the given time elapsed between calls.
+ *
+ * @param  {Function} fn
+ * @param  {Number} timeout
+ *
+ * @return {Function} debounced function
+ */
+function debounce(fn, timeout) {
+  var timer;
+  var lastArgs;
+  var lastThis;
+  var lastNow;
+
+  function fire() {
+    var now = Date.now();
+    var scheduledDiff = lastNow + timeout - now;
+
+    if (scheduledDiff > 0) {
+      return schedule(scheduledDiff);
+    }
+
+    fn.apply(lastThis, lastArgs);
+    timer = lastNow = lastArgs = lastThis = undefined;
+  }
+
+  function schedule(timeout) {
+    timer = setTimeout(fire, timeout);
+  }
+
+  return function () {
+    lastNow = Date.now();
+
+    for (var _len = arguments.length, args = new Array(_len), _key = 0; _key < _len; _key++) {
+      args[_key] = arguments[_key];
+    }
+
+    lastArgs = args;
+    lastThis = this; // ensure an execution is scheduled
+
+    if (!timer) {
+      schedule(timeout);
+    }
+  };
+}
+/**
+ * Throttle fn, calling at most once
+ * in the given interval.
+ *
+ * @param  {Function} fn
+ * @param  {Number} interval
+ *
+ * @return {Function} throttled function
+ */
+
+function throttle(fn, interval) {
+  var throttling = false;
+  return function () {
+    if (throttling) {
+      return;
+    }
+
+    fn.apply(void 0, arguments);
+    throttling = true;
+    setTimeout(function () {
+      throttling = false;
+    }, interval);
+  };
+}
+/**
+ * Bind function against target <this>.
+ *
+ * @param  {Function} fn
+ * @param  {Object}   target
+ *
+ * @return {Function} bound function
+ */
+
+function bind(fn, target) {
+  return fn.bind(target);
+}
+
+function _extends() {
+  _extends = Object.assign || function (target) {
+    for (var i = 1; i < arguments.length; i++) {
+      var source = arguments[i];
+
+      for (var key in source) {
+        if (Object.prototype.hasOwnProperty.call(source, key)) {
+          target[key] = source[key];
+        }
+      }
+    }
+
+    return target;
+  };
+
+  return _extends.apply(this, arguments);
+}
+
+/**
+ * Convenience wrapper for `Object.assign`.
+ *
+ * @param {Object} target
+ * @param {...Object} others
+ *
+ * @return {Object} the target
+ */
+
+function assign(target) {
+  for (var _len = arguments.length, others = new Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
+    others[_key - 1] = arguments[_key];
+  }
+
+  return _extends.apply(void 0, [target].concat(others));
+}
+/**
+ * Pick given properties from the target object.
+ *
+ * @param {Object} target
+ * @param {Array} properties
+ *
+ * @return {Object} target
+ */
+
+function pick(target, properties) {
+  var result = {};
+  var obj = Object(target);
+  forEach(properties, function (prop) {
+    if (prop in obj) {
+      result[prop] = target[prop];
+    }
+  });
+  return result;
+}
+/**
+ * Pick all target properties, excluding the given ones.
+ *
+ * @param {Object} target
+ * @param {Array} properties
+ *
+ * @return {Object} target
+ */
+
+function omit(target, properties) {
+  var result = {};
+  var obj = Object(target);
+  forEach(obj, function (prop, key) {
+    if (properties.indexOf(key) === -1) {
+      result[key] = prop;
+    }
+  });
+  return result;
+}
+/**
+ * Recursively merge `...sources` into given target.
+ *
+ * Does support merging objects; does not support merging arrays.
+ *
+ * @param {Object} target
+ * @param {...Object} sources
+ *
+ * @return {Object} the target
+ */
+
+function merge(target) {
+  for (var _len2 = arguments.length, sources = new Array(_len2 > 1 ? _len2 - 1 : 0), _key2 = 1; _key2 < _len2; _key2++) {
+    sources[_key2 - 1] = arguments[_key2];
+  }
+
+  if (!sources.length) {
+    return target;
+  }
+
+  forEach(sources, function (source) {
+    // skip non-obj sources, i.e. null
+    if (!source || !isObject(source)) {
+      return;
+    }
+
+    forEach(source, function (sourceVal, key) {
+      if (key === '__proto__') {
+        return;
+      }
+
+      var targetVal = target[key];
+
+      if (isObject(sourceVal)) {
+        if (!isObject(targetVal)) {
+          // override target[key] with object
+          targetVal = {};
+        }
+
+        target[key] = merge(targetVal, sourceVal);
+      } else {
+        target[key] = sourceVal;
+      }
+    });
+  });
+  return target;
+}
+
+
+
+
+/***/ }),
+
+/***/ "./node_modules/moddle-xml/dist/index.esm.js":
+/*!***************************************************!*\
+  !*** ./node_modules/moddle-xml/dist/index.esm.js ***!
+  \***************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "Reader": () => (/* binding */ Reader),
+/* harmony export */   "Writer": () => (/* binding */ Writer)
+/* harmony export */ });
+/* harmony import */ var min_dash__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! min-dash */ "./node_modules/min-dash/dist/index.esm.js");
+/* harmony import */ var saxen__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! saxen */ "./node_modules/saxen/dist/index.esm.js");
+/* harmony import */ var moddle__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! moddle */ "./node_modules/moddle/dist/index.esm.js");
+
+
+
+
+function hasLowerCaseAlias(pkg) {
+  return pkg.xml && pkg.xml.tagAlias === 'lowerCase';
+}
+
+var DEFAULT_NS_MAP = {
+  'xsi': 'http://www.w3.org/2001/XMLSchema-instance',
+  'xml': 'http://www.w3.org/XML/1998/namespace'
+};
+
+var XSI_TYPE = 'xsi:type';
+
+function serializeFormat(element) {
+  return element.xml && element.xml.serialize;
+}
+
+function serializeAsType(element) {
+  return serializeFormat(element) === XSI_TYPE;
+}
+
+function serializeAsProperty(element) {
+  return serializeFormat(element) === 'property';
+}
+
+function capitalize(str) {
+  return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
+function aliasToName(aliasNs, pkg) {
+
+  if (!hasLowerCaseAlias(pkg)) {
+    return aliasNs.name;
+  }
+
+  return aliasNs.prefix + ':' + capitalize(aliasNs.localName);
+}
+
+function prefixedToName(nameNs, pkg) {
+
+  var name = nameNs.name,
+      localName = nameNs.localName;
+
+  var typePrefix = pkg.xml && pkg.xml.typePrefix;
+
+  if (typePrefix && localName.indexOf(typePrefix) === 0) {
+    return nameNs.prefix + ':' + localName.slice(typePrefix.length);
+  } else {
+    return name;
+  }
+}
+
+function normalizeXsiTypeName(name, model) {
+
+  var nameNs = (0,moddle__WEBPACK_IMPORTED_MODULE_1__.parseNameNS)(name);
+  var pkg = model.getPackage(nameNs.prefix);
+
+  return prefixedToName(nameNs, pkg);
+}
+
+function error(message) {
+  return new Error(message);
+}
+
+/**
+ * Get the moddle descriptor for a given instance or type.
+ *
+ * @param  {ModdleElement|Function} element
+ *
+ * @return {Object} the moddle descriptor
+ */
+function getModdleDescriptor(element) {
+  return element.$descriptor;
+}
+
+function defer(fn) {
+  setTimeout(fn, 0);
+}
+
+/**
+ * A parse context.
+ *
+ * @class
+ *
+ * @param {Object} options
+ * @param {ElementHandler} options.rootHandler the root handler for parsing a document
+ * @param {boolean} [options.lax=false] whether or not to ignore invalid elements
+ */
+function Context(options) {
+
+  /**
+   * @property {ElementHandler} rootHandler
+   */
+
+  /**
+   * @property {Boolean} lax
+   */
+
+  (0,min_dash__WEBPACK_IMPORTED_MODULE_2__.assign)(this, options);
+
+  this.elementsById = {};
+  this.references = [];
+  this.warnings = [];
+
+  /**
+   * Add an unresolved reference.
+   *
+   * @param {Object} reference
+   */
+  this.addReference = function(reference) {
+    this.references.push(reference);
+  };
+
+  /**
+   * Add a processed element.
+   *
+   * @param {ModdleElement} element
+   */
+  this.addElement = function(element) {
+
+    if (!element) {
+      throw error('expected element');
+    }
+
+    var elementsById = this.elementsById;
+
+    var descriptor = getModdleDescriptor(element);
+
+    var idProperty = descriptor.idProperty,
+        id;
+
+    if (idProperty) {
+      id = element.get(idProperty.name);
+
+      if (id) {
+        // for QName validation as per http://www.w3.org/TR/REC-xml/#NT-NameChar
+        if (!/^([a-z][\w-.]*:)?[a-z_][\w-.]*$/i.test(id)) {
+          throw new Error('illegal ID <' + id + '>');
+        }
+
+        if (elementsById[id]) {
+          throw error('duplicate ID <' + id + '>');
+        }
+
+        elementsById[id] = element;
+      }
+    }
+  };
+
+  /**
+   * Add an import warning.
+   *
+   * @param {Object} warning
+   * @param {String} warning.message
+   * @param {Error} [warning.error]
+   */
+  this.addWarning = function(warning) {
+    this.warnings.push(warning);
+  };
+}
+
+function BaseHandler() {}
+
+BaseHandler.prototype.handleEnd = function() {};
+BaseHandler.prototype.handleText = function() {};
+BaseHandler.prototype.handleNode = function() {};
+
+
+/**
+ * A simple pass through handler that does nothing except for
+ * ignoring all input it receives.
+ *
+ * This is used to ignore unknown elements and
+ * attributes.
+ */
+function NoopHandler() { }
+
+NoopHandler.prototype = Object.create(BaseHandler.prototype);
+
+NoopHandler.prototype.handleNode = function() {
+  return this;
+};
+
+function BodyHandler() {}
+
+BodyHandler.prototype = Object.create(BaseHandler.prototype);
+
+BodyHandler.prototype.handleText = function(text) {
+  this.body = (this.body || '') + text;
+};
+
+function ReferenceHandler(property, context) {
+  this.property = property;
+  this.context = context;
+}
+
+ReferenceHandler.prototype = Object.create(BodyHandler.prototype);
+
+ReferenceHandler.prototype.handleNode = function(node) {
+
+  if (this.element) {
+    throw error('expected no sub nodes');
+  } else {
+    this.element = this.createReference(node);
+  }
+
+  return this;
+};
+
+ReferenceHandler.prototype.handleEnd = function() {
+  this.element.id = this.body;
+};
+
+ReferenceHandler.prototype.createReference = function(node) {
+  return {
+    property: this.property.ns.name,
+    id: ''
+  };
+};
+
+function ValueHandler(propertyDesc, element) {
+  this.element = element;
+  this.propertyDesc = propertyDesc;
+}
+
+ValueHandler.prototype = Object.create(BodyHandler.prototype);
+
+ValueHandler.prototype.handleEnd = function() {
+
+  var value = this.body || '',
+      element = this.element,
+      propertyDesc = this.propertyDesc;
+
+  value = (0,moddle__WEBPACK_IMPORTED_MODULE_1__.coerceType)(propertyDesc.type, value);
+
+  if (propertyDesc.isMany) {
+    element.get(propertyDesc.name).push(value);
+  } else {
+    element.set(propertyDesc.name, value);
+  }
+};
+
+
+function BaseElementHandler() {}
+
+BaseElementHandler.prototype = Object.create(BodyHandler.prototype);
+
+BaseElementHandler.prototype.handleNode = function(node) {
+  var parser = this,
+      element = this.element;
+
+  if (!element) {
+    element = this.element = this.createElement(node);
+
+    this.context.addElement(element);
+  } else {
+    parser = this.handleChild(node);
+  }
+
+  return parser;
+};
+
+/**
+ * @class Reader.ElementHandler
+ *
+ */
+function ElementHandler(model, typeName, context) {
+  this.model = model;
+  this.type = model.getType(typeName);
+  this.context = context;
+}
+
+ElementHandler.prototype = Object.create(BaseElementHandler.prototype);
+
+ElementHandler.prototype.addReference = function(reference) {
+  this.context.addReference(reference);
+};
+
+ElementHandler.prototype.handleText = function(text) {
+
+  var element = this.element,
+      descriptor = getModdleDescriptor(element),
+      bodyProperty = descriptor.bodyProperty;
+
+  if (!bodyProperty) {
+    throw error('unexpected body text <' + text + '>');
+  }
+
+  BodyHandler.prototype.handleText.call(this, text);
+};
+
+ElementHandler.prototype.handleEnd = function() {
+
+  var value = this.body,
+      element = this.element,
+      descriptor = getModdleDescriptor(element),
+      bodyProperty = descriptor.bodyProperty;
+
+  if (bodyProperty && value !== undefined) {
+    value = (0,moddle__WEBPACK_IMPORTED_MODULE_1__.coerceType)(bodyProperty.type, value);
+    element.set(bodyProperty.name, value);
+  }
+};
+
+/**
+ * Create an instance of the model from the given node.
+ *
+ * @param  {Element} node the xml node
+ */
+ElementHandler.prototype.createElement = function(node) {
+  var attributes = node.attributes,
+      Type = this.type,
+      descriptor = getModdleDescriptor(Type),
+      context = this.context,
+      instance = new Type({}),
+      model = this.model,
+      propNameNs;
+
+  (0,min_dash__WEBPACK_IMPORTED_MODULE_2__.forEach)(attributes, function(value, name) {
+
+    var prop = descriptor.propertiesByName[name],
+        values;
+
+    if (prop && prop.isReference) {
+
+      if (!prop.isMany) {
+        context.addReference({
+          element: instance,
+          property: prop.ns.name,
+          id: value
+        });
+      } else {
+        // IDREFS: parse references as whitespace-separated list
+        values = value.split(' ');
+
+        (0,min_dash__WEBPACK_IMPORTED_MODULE_2__.forEach)(values, function(v) {
+          context.addReference({
+            element: instance,
+            property: prop.ns.name,
+            id: v
+          });
+        });
+      }
+
+    } else {
+      if (prop) {
+        value = (0,moddle__WEBPACK_IMPORTED_MODULE_1__.coerceType)(prop.type, value);
+      } else
+      if (name !== 'xmlns') {
+        propNameNs = (0,moddle__WEBPACK_IMPORTED_MODULE_1__.parseNameNS)(name, descriptor.ns.prefix);
+
+        // check whether attribute is defined in a well-known namespace
+        // if that is the case we emit a warning to indicate potential misuse
+        if (model.getPackage(propNameNs.prefix)) {
+
+          context.addWarning({
+            message: 'unknown attribute <' + name + '>',
+            element: instance,
+            property: name,
+            value: value
+          });
+        }
+      }
+
+      instance.set(name, value);
+    }
+  });
+
+  return instance;
+};
+
+ElementHandler.prototype.getPropertyForNode = function(node) {
+
+  var name = node.name;
+  var nameNs = (0,moddle__WEBPACK_IMPORTED_MODULE_1__.parseNameNS)(name);
+
+  var type = this.type,
+      model = this.model,
+      descriptor = getModdleDescriptor(type);
+
+  var propertyName = nameNs.name,
+      property = descriptor.propertiesByName[propertyName],
+      elementTypeName,
+      elementType;
+
+  // search for properties by name first
+
+  if (property && !property.isAttr) {
+
+    if (serializeAsType(property)) {
+      elementTypeName = node.attributes[XSI_TYPE];
+
+      // xsi type is optional, if it does not exists the
+      // default type is assumed
+      if (elementTypeName) {
+
+        // take possible type prefixes from XML
+        // into account, i.e.: xsi:type="t{ActualType}"
+        elementTypeName = normalizeXsiTypeName(elementTypeName, model);
+
+        elementType = model.getType(elementTypeName);
+
+        return (0,min_dash__WEBPACK_IMPORTED_MODULE_2__.assign)({}, property, {
+          effectiveType: getModdleDescriptor(elementType).name
+        });
+      }
+    }
+
+    // search for properties by name first
+    return property;
+  }
+
+  var pkg = model.getPackage(nameNs.prefix);
+
+  if (pkg) {
+    elementTypeName = aliasToName(nameNs, pkg);
+    elementType = model.getType(elementTypeName);
+
+    // search for collection members later
+    property = (0,min_dash__WEBPACK_IMPORTED_MODULE_2__.find)(descriptor.properties, function(p) {
+      return !p.isVirtual && !p.isReference && !p.isAttribute && elementType.hasType(p.type);
+    });
+
+    if (property) {
+      return (0,min_dash__WEBPACK_IMPORTED_MODULE_2__.assign)({}, property, {
+        effectiveType: getModdleDescriptor(elementType).name
+      });
+    }
+  } else {
+    // parse unknown element (maybe extension)
+    property = (0,min_dash__WEBPACK_IMPORTED_MODULE_2__.find)(descriptor.properties, function(p) {
+      return !p.isReference && !p.isAttribute && p.type === 'Element';
+    });
+
+    if (property) {
+      return property;
+    }
+  }
+
+  throw error('unrecognized element <' + nameNs.name + '>');
+};
+
+ElementHandler.prototype.toString = function() {
+  return 'ElementDescriptor[' + getModdleDescriptor(this.type).name + ']';
+};
+
+ElementHandler.prototype.valueHandler = function(propertyDesc, element) {
+  return new ValueHandler(propertyDesc, element);
+};
+
+ElementHandler.prototype.referenceHandler = function(propertyDesc) {
+  return new ReferenceHandler(propertyDesc, this.context);
+};
+
+ElementHandler.prototype.handler = function(type) {
+  if (type === 'Element') {
+    return new GenericElementHandler(this.model, type, this.context);
+  } else {
+    return new ElementHandler(this.model, type, this.context);
+  }
+};
+
+/**
+ * Handle the child element parsing
+ *
+ * @param  {Element} node the xml node
+ */
+ElementHandler.prototype.handleChild = function(node) {
+  var propertyDesc, type, element, childHandler;
+
+  propertyDesc = this.getPropertyForNode(node);
+  element = this.element;
+
+  type = propertyDesc.effectiveType || propertyDesc.type;
+
+  if ((0,moddle__WEBPACK_IMPORTED_MODULE_1__.isSimpleType)(type)) {
+    return this.valueHandler(propertyDesc, element);
+  }
+
+  if (propertyDesc.isReference) {
+    childHandler = this.referenceHandler(propertyDesc).handleNode(node);
+  } else {
+    childHandler = this.handler(type).handleNode(node);
+  }
+
+  var newElement = childHandler.element;
+
+  // child handles may decide to skip elements
+  // by not returning anything
+  if (newElement !== undefined) {
+
+    if (propertyDesc.isMany) {
+      element.get(propertyDesc.name).push(newElement);
+    } else {
+      element.set(propertyDesc.name, newElement);
+    }
+
+    if (propertyDesc.isReference) {
+      (0,min_dash__WEBPACK_IMPORTED_MODULE_2__.assign)(newElement, {
+        element: element
+      });
+
+      this.context.addReference(newElement);
+    } else {
+      // establish child -> parent relationship
+      newElement.$parent = element;
+    }
+  }
+
+  return childHandler;
+};
+
+/**
+ * An element handler that performs special validation
+ * to ensure the node it gets initialized with matches
+ * the handlers type (namespace wise).
+ *
+ * @param {Moddle} model
+ * @param {String} typeName
+ * @param {Context} context
+ */
+function RootElementHandler(model, typeName, context) {
+  ElementHandler.call(this, model, typeName, context);
+}
+
+RootElementHandler.prototype = Object.create(ElementHandler.prototype);
+
+RootElementHandler.prototype.createElement = function(node) {
+
+  var name = node.name,
+      nameNs = (0,moddle__WEBPACK_IMPORTED_MODULE_1__.parseNameNS)(name),
+      model = this.model,
+      type = this.type,
+      pkg = model.getPackage(nameNs.prefix),
+      typeName = pkg && aliasToName(nameNs, pkg) || name;
+
+  // verify the correct namespace if we parse
+  // the first element in the handler tree
+  //
+  // this ensures we don't mistakenly import wrong namespace elements
+  if (!type.hasType(typeName)) {
+    throw error('unexpected element <' + node.originalName + '>');
+  }
+
+  return ElementHandler.prototype.createElement.call(this, node);
+};
+
+
+function GenericElementHandler(model, typeName, context) {
+  this.model = model;
+  this.context = context;
+}
+
+GenericElementHandler.prototype = Object.create(BaseElementHandler.prototype);
+
+GenericElementHandler.prototype.createElement = function(node) {
+
+  var name = node.name,
+      ns = (0,moddle__WEBPACK_IMPORTED_MODULE_1__.parseNameNS)(name),
+      prefix = ns.prefix,
+      uri = node.ns[prefix + '$uri'],
+      attributes = node.attributes;
+
+  return this.model.createAny(name, uri, attributes);
+};
+
+GenericElementHandler.prototype.handleChild = function(node) {
+
+  var handler = new GenericElementHandler(this.model, 'Element', this.context).handleNode(node),
+      element = this.element;
+
+  var newElement = handler.element,
+      children;
+
+  if (newElement !== undefined) {
+    children = element.$children = element.$children || [];
+    children.push(newElement);
+
+    // establish child -> parent relationship
+    newElement.$parent = element;
+  }
+
+  return handler;
+};
+
+GenericElementHandler.prototype.handleEnd = function() {
+  if (this.body) {
+    this.element.$body = this.body;
+  }
+};
+
+/**
+ * A reader for a meta-model
+ *
+ * @param {Object} options
+ * @param {Model} options.model used to read xml files
+ * @param {Boolean} options.lax whether to make parse errors warnings
+ */
+function Reader(options) {
+
+  if (options instanceof moddle__WEBPACK_IMPORTED_MODULE_1__.Moddle) {
+    options = {
+      model: options
+    };
+  }
+
+  (0,min_dash__WEBPACK_IMPORTED_MODULE_2__.assign)(this, { lax: false }, options);
+}
+
+
+/**
+ * Parse the given XML into a moddle document tree.
+ *
+ * @param {String} xml
+ * @param {ElementHandler|Object} options or rootHandler
+ * @param  {Function} done
+ */
+Reader.prototype.fromXML = function(xml, options, done) {
+
+  var rootHandler = options.rootHandler;
+
+  if (options instanceof ElementHandler) {
+    // root handler passed via (xml, { rootHandler: ElementHandler }, ...)
+    rootHandler = options;
+    options = {};
+  } else {
+    if (typeof options === 'string') {
+      // rootHandler passed via (xml, 'someString', ...)
+      rootHandler = this.handler(options);
+      options = {};
+    } else if (typeof rootHandler === 'string') {
+      // rootHandler passed via (xml, { rootHandler: 'someString' }, ...)
+      rootHandler = this.handler(rootHandler);
+    }
+  }
+
+  var model = this.model,
+      lax = this.lax;
+
+  var context = new Context((0,min_dash__WEBPACK_IMPORTED_MODULE_2__.assign)({}, options, { rootHandler: rootHandler })),
+      parser = new saxen__WEBPACK_IMPORTED_MODULE_0__.Parser({ proxy: true }),
+      stack = createStack();
+
+  rootHandler.context = context;
+
+  // push root handler
+  stack.push(rootHandler);
+
+
+  /**
+   * Handle error.
+   *
+   * @param  {Error} err
+   * @param  {Function} getContext
+   * @param  {boolean} lax
+   *
+   * @return {boolean} true if handled
+   */
+  function handleError(err, getContext, lax) {
+
+    var ctx = getContext();
+
+    var line = ctx.line,
+        column = ctx.column,
+        data = ctx.data;
+
+    // we receive the full context data here,
+    // for elements trim down the information
+    // to the tag name, only
+    if (data.charAt(0) === '<' && data.indexOf(' ') !== -1) {
+      data = data.slice(0, data.indexOf(' ')) + '>';
+    }
+
+    var message =
+      'unparsable content ' + (data ? data + ' ' : '') + 'detected\n\t' +
+        'line: ' + line + '\n\t' +
+        'column: ' + column + '\n\t' +
+        'nested error: ' + err.message;
+
+    if (lax) {
+      context.addWarning({
+        message: message,
+        error: err
+      });
+
+      return true;
+    } else {
+      throw error(message);
+    }
+  }
+
+  function handleWarning(err, getContext) {
+    // just like handling errors in <lax=true> mode
+    return handleError(err, getContext, true);
+  }
+
+  /**
+   * Resolve collected references on parse end.
+   */
+  function resolveReferences() {
+
+    var elementsById = context.elementsById;
+    var references = context.references;
+
+    var i, r;
+
+    for (i = 0; (r = references[i]); i++) {
+      var element = r.element;
+      var reference = elementsById[r.id];
+      var property = getModdleDescriptor(element).propertiesByName[r.property];
+
+      if (!reference) {
+        context.addWarning({
+          message: 'unresolved reference <' + r.id + '>',
+          element: r.element,
+          property: r.property,
+          value: r.id
+        });
+      }
+
+      if (property.isMany) {
+        var collection = element.get(property.name),
+            idx = collection.indexOf(r);
+
+        // we replace an existing place holder (idx != -1) or
+        // append to the collection instead
+        if (idx === -1) {
+          idx = collection.length;
+        }
+
+        if (!reference) {
+          // remove unresolvable reference
+          collection.splice(idx, 1);
+        } else {
+          // add or update reference in collection
+          collection[idx] = reference;
+        }
+      } else {
+        element.set(property.name, reference);
+      }
+    }
+  }
+
+  function handleClose() {
+    stack.pop().handleEnd();
+  }
+
+  var PREAMBLE_START_PATTERN = /^<\?xml /i;
+
+  var ENCODING_PATTERN = / encoding="([^"]+)"/i;
+
+  var UTF_8_PATTERN = /^utf-8$/i;
+
+  function handleQuestion(question) {
+
+    if (!PREAMBLE_START_PATTERN.test(question)) {
+      return;
+    }
+
+    var match = ENCODING_PATTERN.exec(question);
+    var encoding = match && match[1];
+
+    if (!encoding || UTF_8_PATTERN.test(encoding)) {
+      return;
+    }
+
+    context.addWarning({
+      message:
+        'unsupported document encoding <' + encoding + '>, ' +
+        'falling back to UTF-8'
+    });
+  }
+
+  function handleOpen(node, getContext) {
+    var handler = stack.peek();
+
+    try {
+      stack.push(handler.handleNode(node));
+    } catch (err) {
+
+      if (handleError(err, getContext, lax)) {
+        stack.push(new NoopHandler());
+      }
+    }
+  }
+
+  function handleCData(text, getContext) {
+
+    try {
+      stack.peek().handleText(text);
+    } catch (err) {
+      handleWarning(err, getContext);
+    }
+  }
+
+  function handleText(text, getContext) {
+    // strip whitespace only nodes, i.e. before
+    // <!CDATA[ ... ]> sections and in between tags
+    text = text.trim();
+
+    if (!text) {
+      return;
+    }
+
+    handleCData(text, getContext);
+  }
+
+  var uriMap = model.getPackages().reduce(function(uriMap, p) {
+    uriMap[p.uri] = p.prefix;
+
+    return uriMap;
+  }, {
+    'http://www.w3.org/XML/1998/namespace': 'xml' // add default xml ns
+  });
+  parser
+    .ns(uriMap)
+    .on('openTag', function(obj, decodeStr, selfClosing, getContext) {
+
+      // gracefully handle unparsable attributes (attrs=false)
+      var attrs = obj.attrs || {};
+
+      var decodedAttrs = Object.keys(attrs).reduce(function(d, key) {
+        var value = decodeStr(attrs[key]);
+
+        d[key] = value;
+
+        return d;
+      }, {});
+
+      var node = {
+        name: obj.name,
+        originalName: obj.originalName,
+        attributes: decodedAttrs,
+        ns: obj.ns
+      };
+
+      handleOpen(node, getContext);
+    })
+    .on('question', handleQuestion)
+    .on('closeTag', handleClose)
+    .on('cdata', handleCData)
+    .on('text', function(text, decodeEntities, getContext) {
+      handleText(decodeEntities(text), getContext);
+    })
+    .on('error', handleError)
+    .on('warn', handleWarning);
+
+  // deferred parse XML to make loading really ascnchronous
+  // this ensures the execution environment (node or browser)
+  // is kept responsive and that certain optimization strategies
+  // can kick in
+  defer(function() {
+    var err;
+
+    try {
+      parser.parse(xml);
+
+      resolveReferences();
+    } catch (e) {
+      err = e;
+    }
+
+    var element = rootHandler.element;
+
+    // handle the situation that we could not extract
+    // the desired root element from the document
+    if (!err && !element) {
+      err = error('failed to parse document as <' + rootHandler.type.$descriptor.name + '>');
+    }
+
+    done(err, err ? undefined : element, context);
+  });
+};
+
+Reader.prototype.handler = function(name) {
+  return new RootElementHandler(this.model, name);
+};
+
+
+// helpers //////////////////////////
+
+function createStack() {
+  var stack = [];
+
+  Object.defineProperty(stack, 'peek', {
+    value: function() {
+      return this[this.length - 1];
+    }
+  });
+
+  return stack;
+}
+
+var XML_PREAMBLE = '<?xml version="1.0" encoding="UTF-8"?>\n';
+
+var ESCAPE_ATTR_CHARS = /<|>|'|"|&|\n\r|\n/g;
+var ESCAPE_CHARS = /<|>|&/g;
+
+
+function Namespaces(parent) {
+
+  var prefixMap = {};
+  var uriMap = {};
+  var used = {};
+
+  var wellknown = [];
+  var custom = [];
+
+  // API
+
+  this.byUri = function(uri) {
+    return uriMap[uri] || (
+      parent && parent.byUri(uri)
+    );
+  };
+
+  this.add = function(ns, isWellknown) {
+
+    uriMap[ns.uri] = ns;
+
+    if (isWellknown) {
+      wellknown.push(ns);
+    } else {
+      custom.push(ns);
+    }
+
+    this.mapPrefix(ns.prefix, ns.uri);
+  };
+
+  this.uriByPrefix = function(prefix) {
+    return prefixMap[prefix || 'xmlns'];
+  };
+
+  this.mapPrefix = function(prefix, uri) {
+    prefixMap[prefix || 'xmlns'] = uri;
+  };
+
+  this.getNSKey = function(ns) {
+    return (ns.prefix !== undefined) ? (ns.uri + '|' + ns.prefix) : ns.uri;
+  };
+
+  this.logUsed = function(ns) {
+
+    var uri = ns.uri;
+    var nsKey = this.getNSKey(ns);
+
+    used[nsKey] = this.byUri(uri);
+
+    // Inform parent recursively about the usage of this NS
+    if (parent) {
+      parent.logUsed(ns);
+    }
+  };
+
+  this.getUsed = function(ns) {
+
+    function isUsed(ns) {
+      var nsKey = self.getNSKey(ns);
+
+      return used[nsKey];
+    }
+
+    var self = this;
+
+    var allNs = [].concat(wellknown, custom);
+
+    return allNs.filter(isUsed);
+  };
+
+}
+
+function lower(string) {
+  return string.charAt(0).toLowerCase() + string.slice(1);
+}
+
+function nameToAlias(name, pkg) {
+  if (hasLowerCaseAlias(pkg)) {
+    return lower(name);
+  } else {
+    return name;
+  }
+}
+
+function inherits(ctor, superCtor) {
+  ctor.super_ = superCtor;
+  ctor.prototype = Object.create(superCtor.prototype, {
+    constructor: {
+      value: ctor,
+      enumerable: false,
+      writable: true,
+      configurable: true
+    }
+  });
+}
+
+function nsName(ns) {
+  if ((0,min_dash__WEBPACK_IMPORTED_MODULE_2__.isString)(ns)) {
+    return ns;
+  } else {
+    return (ns.prefix ? ns.prefix + ':' : '') + ns.localName;
+  }
+}
+
+function getNsAttrs(namespaces) {
+
+  return (0,min_dash__WEBPACK_IMPORTED_MODULE_2__.map)(namespaces.getUsed(), function(ns) {
+    var name = 'xmlns' + (ns.prefix ? ':' + ns.prefix : '');
+    return { name: name, value: ns.uri };
+  });
+
+}
+
+function getElementNs(ns, descriptor) {
+  if (descriptor.isGeneric) {
+    return (0,min_dash__WEBPACK_IMPORTED_MODULE_2__.assign)({ localName: descriptor.ns.localName }, ns);
+  } else {
+    return (0,min_dash__WEBPACK_IMPORTED_MODULE_2__.assign)({ localName: nameToAlias(descriptor.ns.localName, descriptor.$pkg) }, ns);
+  }
+}
+
+function getPropertyNs(ns, descriptor) {
+  return (0,min_dash__WEBPACK_IMPORTED_MODULE_2__.assign)({ localName: descriptor.ns.localName }, ns);
+}
+
+function getSerializableProperties(element) {
+  var descriptor = element.$descriptor;
+
+  return (0,min_dash__WEBPACK_IMPORTED_MODULE_2__.filter)(descriptor.properties, function(p) {
+    var name = p.name;
+
+    if (p.isVirtual) {
+      return false;
+    }
+
+    // do not serialize defaults
+    if (!element.hasOwnProperty(name)) {
+      return false;
+    }
+
+    var value = element[name];
+
+    // do not serialize default equals
+    if (value === p.default) {
+      return false;
+    }
+
+    // do not serialize null properties
+    if (value === null) {
+      return false;
+    }
+
+    return p.isMany ? value.length : true;
+  });
+}
+
+var ESCAPE_ATTR_MAP = {
+  '\n': '#10',
+  '\n\r': '#10',
+  '"': '#34',
+  '\'': '#39',
+  '<': '#60',
+  '>': '#62',
+  '&': '#38'
+};
+
+var ESCAPE_MAP = {
+  '<': 'lt',
+  '>': 'gt',
+  '&': 'amp'
+};
+
+function escape(str, charPattern, replaceMap) {
+
+  // ensure we are handling strings here
+  str = (0,min_dash__WEBPACK_IMPORTED_MODULE_2__.isString)(str) ? str : '' + str;
+
+  return str.replace(charPattern, function(s) {
+    return '&' + replaceMap[s] + ';';
+  });
+}
+
+/**
+ * Escape a string attribute to not contain any bad values (line breaks, '"', ...)
+ *
+ * @param {String} str the string to escape
+ * @return {String} the escaped string
+ */
+function escapeAttr(str) {
+  return escape(str, ESCAPE_ATTR_CHARS, ESCAPE_ATTR_MAP);
+}
+
+function escapeBody(str) {
+  return escape(str, ESCAPE_CHARS, ESCAPE_MAP);
+}
+
+function filterAttributes(props) {
+  return (0,min_dash__WEBPACK_IMPORTED_MODULE_2__.filter)(props, function(p) { return p.isAttr; });
+}
+
+function filterContained(props) {
+  return (0,min_dash__WEBPACK_IMPORTED_MODULE_2__.filter)(props, function(p) { return !p.isAttr; });
+}
+
+
+function ReferenceSerializer(tagName) {
+  this.tagName = tagName;
+}
+
+ReferenceSerializer.prototype.build = function(element) {
+  this.element = element;
+  return this;
+};
+
+ReferenceSerializer.prototype.serializeTo = function(writer) {
+  writer
+    .appendIndent()
+    .append('<' + this.tagName + '>' + this.element.id + '</' + this.tagName + '>')
+    .appendNewLine();
+};
+
+function BodySerializer() {}
+
+BodySerializer.prototype.serializeValue =
+BodySerializer.prototype.serializeTo = function(writer) {
+  writer.append(
+    this.escape
+      ? escapeBody(this.value)
+      : this.value
+  );
+};
+
+BodySerializer.prototype.build = function(prop, value) {
+  this.value = value;
+
+  if (prop.type === 'String' && value.search(ESCAPE_CHARS) !== -1) {
+    this.escape = true;
+  }
+
+  return this;
+};
+
+function ValueSerializer(tagName) {
+  this.tagName = tagName;
+}
+
+inherits(ValueSerializer, BodySerializer);
+
+ValueSerializer.prototype.serializeTo = function(writer) {
+
+  writer
+    .appendIndent()
+    .append('<' + this.tagName + '>');
+
+  this.serializeValue(writer);
+
+  writer
+    .append('</' + this.tagName + '>')
+    .appendNewLine();
+};
+
+function ElementSerializer(parent, propertyDescriptor) {
+  this.body = [];
+  this.attrs = [];
+
+  this.parent = parent;
+  this.propertyDescriptor = propertyDescriptor;
+}
+
+ElementSerializer.prototype.build = function(element) {
+  this.element = element;
+
+  var elementDescriptor = element.$descriptor,
+      propertyDescriptor = this.propertyDescriptor;
+
+  var otherAttrs,
+      properties;
+
+  var isGeneric = elementDescriptor.isGeneric;
+
+  if (isGeneric) {
+    otherAttrs = this.parseGeneric(element);
+  } else {
+    otherAttrs = this.parseNsAttributes(element);
+  }
+
+  if (propertyDescriptor) {
+    this.ns = this.nsPropertyTagName(propertyDescriptor);
+  } else {
+    this.ns = this.nsTagName(elementDescriptor);
+  }
+
+  // compute tag name
+  this.tagName = this.addTagName(this.ns);
+
+  if (!isGeneric) {
+    properties = getSerializableProperties(element);
+
+    this.parseAttributes(filterAttributes(properties));
+    this.parseContainments(filterContained(properties));
+  }
+
+  this.parseGenericAttributes(element, otherAttrs);
+
+  return this;
+};
+
+ElementSerializer.prototype.nsTagName = function(descriptor) {
+  var effectiveNs = this.logNamespaceUsed(descriptor.ns);
+  return getElementNs(effectiveNs, descriptor);
+};
+
+ElementSerializer.prototype.nsPropertyTagName = function(descriptor) {
+  var effectiveNs = this.logNamespaceUsed(descriptor.ns);
+  return getPropertyNs(effectiveNs, descriptor);
+};
+
+ElementSerializer.prototype.isLocalNs = function(ns) {
+  return ns.uri === this.ns.uri;
+};
+
+/**
+ * Get the actual ns attribute name for the given element.
+ *
+ * @param {Object} element
+ * @param {Boolean} [element.inherited=false]
+ *
+ * @return {Object} nsName
+ */
+ElementSerializer.prototype.nsAttributeName = function(element) {
+
+  var ns;
+
+  if ((0,min_dash__WEBPACK_IMPORTED_MODULE_2__.isString)(element)) {
+    ns = (0,moddle__WEBPACK_IMPORTED_MODULE_1__.parseNameNS)(element);
+  } else {
+    ns = element.ns;
+  }
+
+  // return just local name for inherited attributes
+  if (element.inherited) {
+    return { localName: ns.localName };
+  }
+
+  // parse + log effective ns
+  var effectiveNs = this.logNamespaceUsed(ns);
+
+  // LOG ACTUAL namespace use
+  this.getNamespaces().logUsed(effectiveNs);
+
+  // strip prefix if same namespace like parent
+  if (this.isLocalNs(effectiveNs)) {
+    return { localName: ns.localName };
+  } else {
+    return (0,min_dash__WEBPACK_IMPORTED_MODULE_2__.assign)({ localName: ns.localName }, effectiveNs);
+  }
+};
+
+ElementSerializer.prototype.parseGeneric = function(element) {
+
+  var self = this,
+      body = this.body;
+
+  var attributes = [];
+
+  (0,min_dash__WEBPACK_IMPORTED_MODULE_2__.forEach)(element, function(val, key) {
+
+    var nonNsAttr;
+
+    if (key === '$body') {
+      body.push(new BodySerializer().build({ type: 'String' }, val));
+    } else
+    if (key === '$children') {
+      (0,min_dash__WEBPACK_IMPORTED_MODULE_2__.forEach)(val, function(child) {
+        body.push(new ElementSerializer(self).build(child));
+      });
+    } else
+    if (key.indexOf('$') !== 0) {
+      nonNsAttr = self.parseNsAttribute(element, key, val);
+
+      if (nonNsAttr) {
+        attributes.push({ name: key, value: val });
+      }
+    }
+  });
+
+  return attributes;
+};
+
+ElementSerializer.prototype.parseNsAttribute = function(element, name, value) {
+  var model = element.$model;
+
+  var nameNs = (0,moddle__WEBPACK_IMPORTED_MODULE_1__.parseNameNS)(name);
+
+  var ns;
+
+  // parse xmlns:foo="http://foo.bar"
+  if (nameNs.prefix === 'xmlns') {
+    ns = { prefix: nameNs.localName, uri: value };
+  }
+
+  // parse xmlns="http://foo.bar"
+  if (!nameNs.prefix && nameNs.localName === 'xmlns') {
+    ns = { uri: value };
+  }
+
+  if (!ns) {
+    return {
+      name: name,
+      value: value
+    };
+  }
+
+  if (model && model.getPackage(value)) {
+    // register well known namespace
+    this.logNamespace(ns, true, true);
+  } else {
+    // log custom namespace directly as used
+    var actualNs = this.logNamespaceUsed(ns, true);
+
+    this.getNamespaces().logUsed(actualNs);
+  }
+};
+
+
+/**
+ * Parse namespaces and return a list of left over generic attributes
+ *
+ * @param  {Object} element
+ * @return {Array<Object>}
+ */
+ElementSerializer.prototype.parseNsAttributes = function(element, attrs) {
+  var self = this;
+
+  var genericAttrs = element.$attrs;
+
+  var attributes = [];
+
+  // parse namespace attributes first
+  // and log them. push non namespace attributes to a list
+  // and process them later
+  (0,min_dash__WEBPACK_IMPORTED_MODULE_2__.forEach)(genericAttrs, function(value, name) {
+
+    var nonNsAttr = self.parseNsAttribute(element, name, value);
+
+    if (nonNsAttr) {
+      attributes.push(nonNsAttr);
+    }
+  });
+
+  return attributes;
+};
+
+ElementSerializer.prototype.parseGenericAttributes = function(element, attributes) {
+
+  var self = this;
+
+  (0,min_dash__WEBPACK_IMPORTED_MODULE_2__.forEach)(attributes, function(attr) {
+
+    // do not serialize xsi:type attribute
+    // it is set manually based on the actual implementation type
+    if (attr.name === XSI_TYPE) {
+      return;
+    }
+
+    try {
+      self.addAttribute(self.nsAttributeName(attr.name), attr.value);
+    } catch (e) {
+      console.warn(
+        'missing namespace information for ',
+        attr.name, '=', attr.value, 'on', element,
+        e);
+    }
+  });
+};
+
+ElementSerializer.prototype.parseContainments = function(properties) {
+
+  var self = this,
+      body = this.body,
+      element = this.element;
+
+  (0,min_dash__WEBPACK_IMPORTED_MODULE_2__.forEach)(properties, function(p) {
+    var value = element.get(p.name),
+        isReference = p.isReference,
+        isMany = p.isMany;
+
+    if (!isMany) {
+      value = [ value ];
+    }
+
+    if (p.isBody) {
+      body.push(new BodySerializer().build(p, value[0]));
+    } else
+    if ((0,moddle__WEBPACK_IMPORTED_MODULE_1__.isSimpleType)(p.type)) {
+      (0,min_dash__WEBPACK_IMPORTED_MODULE_2__.forEach)(value, function(v) {
+        body.push(new ValueSerializer(self.addTagName(self.nsPropertyTagName(p))).build(p, v));
+      });
+    } else
+    if (isReference) {
+      (0,min_dash__WEBPACK_IMPORTED_MODULE_2__.forEach)(value, function(v) {
+        body.push(new ReferenceSerializer(self.addTagName(self.nsPropertyTagName(p))).build(v));
+      });
+    } else {
+      // allow serialization via type
+      // rather than element name
+      var asType = serializeAsType(p),
+          asProperty = serializeAsProperty(p);
+
+      (0,min_dash__WEBPACK_IMPORTED_MODULE_2__.forEach)(value, function(v) {
+        var serializer;
+
+        if (asType) {
+          serializer = new TypeSerializer(self, p);
+        } else
+        if (asProperty) {
+          serializer = new ElementSerializer(self, p);
+        } else {
+          serializer = new ElementSerializer(self);
+        }
+
+        body.push(serializer.build(v));
+      });
+    }
+  });
+};
+
+ElementSerializer.prototype.getNamespaces = function(local) {
+
+  var namespaces = this.namespaces,
+      parent = this.parent,
+      parentNamespaces;
+
+  if (!namespaces) {
+    parentNamespaces = parent && parent.getNamespaces();
+
+    if (local || !parentNamespaces) {
+      this.namespaces = namespaces = new Namespaces(parentNamespaces);
+    } else {
+      namespaces = parentNamespaces;
+    }
+  }
+
+  return namespaces;
+};
+
+ElementSerializer.prototype.logNamespace = function(ns, wellknown, local) {
+  var namespaces = this.getNamespaces(local);
+
+  var nsUri = ns.uri,
+      nsPrefix = ns.prefix;
+
+  var existing = namespaces.byUri(nsUri);
+
+  if (nsPrefix !== 'xml' && (!existing || local)) {
+    namespaces.add(ns, wellknown);
+  }
+
+  namespaces.mapPrefix(nsPrefix, nsUri);
+
+  return ns;
+};
+
+ElementSerializer.prototype.logNamespaceUsed = function(ns, local) {
+  var element = this.element,
+      model = element.$model,
+      namespaces = this.getNamespaces(local);
+
+  // ns may be
+  //
+  //   * prefix only
+  //   * prefix:uri
+  //   * localName only
+
+  var prefix = ns.prefix,
+      uri = ns.uri,
+      newPrefix, idx,
+      wellknownUri;
+
+  // handle anonymous namespaces (elementForm=unqualified), cf. #23
+  if (!prefix && !uri) {
+    return { localName: ns.localName };
+  }
+
+  wellknownUri = DEFAULT_NS_MAP[prefix] || model && (model.getPackage(prefix) || {}).uri;
+
+  uri = uri || wellknownUri || namespaces.uriByPrefix(prefix);
+
+  if (!uri) {
+    throw new Error('no namespace uri given for prefix <' + prefix + '>');
+  }
+
+  ns = namespaces.byUri(uri);
+
+  if (!ns) {
+    newPrefix = prefix;
+    idx = 1;
+
+    // find a prefix that is not mapped yet
+    while (namespaces.uriByPrefix(newPrefix)) {
+      newPrefix = prefix + '_' + idx++;
+    }
+
+    ns = this.logNamespace({ prefix: newPrefix, uri: uri }, wellknownUri === uri);
+  }
+
+  if (prefix) {
+    namespaces.mapPrefix(prefix, uri);
+  }
+
+  return ns;
+};
+
+ElementSerializer.prototype.parseAttributes = function(properties) {
+  var self = this,
+      element = this.element;
+
+  (0,min_dash__WEBPACK_IMPORTED_MODULE_2__.forEach)(properties, function(p) {
+
+    var value = element.get(p.name);
+
+    if (p.isReference) {
+
+      if (!p.isMany) {
+        value = value.id;
+      }
+      else {
+        var values = [];
+        (0,min_dash__WEBPACK_IMPORTED_MODULE_2__.forEach)(value, function(v) {
+          values.push(v.id);
+        });
+        // IDREFS is a whitespace-separated list of references.
+        value = values.join(' ');
+      }
+
+    }
+
+    self.addAttribute(self.nsAttributeName(p), value);
+  });
+};
+
+ElementSerializer.prototype.addTagName = function(nsTagName) {
+  var actualNs = this.logNamespaceUsed(nsTagName);
+
+  this.getNamespaces().logUsed(actualNs);
+
+  return nsName(nsTagName);
+};
+
+ElementSerializer.prototype.addAttribute = function(name, value) {
+  var attrs = this.attrs;
+
+  if ((0,min_dash__WEBPACK_IMPORTED_MODULE_2__.isString)(value)) {
+    value = escapeAttr(value);
+  }
+
+  attrs.push({ name: name, value: value });
+};
+
+ElementSerializer.prototype.serializeAttributes = function(writer) {
+  var attrs = this.attrs,
+      namespaces = this.namespaces;
+
+  if (namespaces) {
+    attrs = getNsAttrs(namespaces).concat(attrs);
+  }
+
+  (0,min_dash__WEBPACK_IMPORTED_MODULE_2__.forEach)(attrs, function(a) {
+    writer
+      .append(' ')
+      .append(nsName(a.name)).append('="').append(a.value).append('"');
+  });
+};
+
+ElementSerializer.prototype.serializeTo = function(writer) {
+  var firstBody = this.body[0],
+      indent = firstBody && firstBody.constructor !== BodySerializer;
+
+  writer
+    .appendIndent()
+    .append('<' + this.tagName);
+
+  this.serializeAttributes(writer);
+
+  writer.append(firstBody ? '>' : ' />');
+
+  if (firstBody) {
+
+    if (indent) {
+      writer
+        .appendNewLine()
+        .indent();
+    }
+
+    (0,min_dash__WEBPACK_IMPORTED_MODULE_2__.forEach)(this.body, function(b) {
+      b.serializeTo(writer);
+    });
+
+    if (indent) {
+      writer
+        .unindent()
+        .appendIndent();
+    }
+
+    writer.append('</' + this.tagName + '>');
+  }
+
+  writer.appendNewLine();
+};
+
+/**
+ * A serializer for types that handles serialization of data types
+ */
+function TypeSerializer(parent, propertyDescriptor) {
+  ElementSerializer.call(this, parent, propertyDescriptor);
+}
+
+inherits(TypeSerializer, ElementSerializer);
+
+TypeSerializer.prototype.parseNsAttributes = function(element) {
+
+  // extracted attributes
+  var attributes = ElementSerializer.prototype.parseNsAttributes.call(this, element);
+
+  var descriptor = element.$descriptor;
+
+  // only serialize xsi:type if necessary
+  if (descriptor.name === this.propertyDescriptor.type) {
+    return attributes;
+  }
+
+  var typeNs = this.typeNs = this.nsTagName(descriptor);
+  this.getNamespaces().logUsed(this.typeNs);
+
+  // add xsi:type attribute to represent the elements
+  // actual type
+
+  var pkg = element.$model.getPackage(typeNs.uri),
+      typePrefix = (pkg.xml && pkg.xml.typePrefix) || '';
+
+  this.addAttribute(
+    this.nsAttributeName(XSI_TYPE),
+    (typeNs.prefix ? typeNs.prefix + ':' : '') + typePrefix + descriptor.ns.localName
+  );
+
+  return attributes;
+};
+
+TypeSerializer.prototype.isLocalNs = function(ns) {
+  return ns.uri === (this.typeNs || this.ns).uri;
+};
+
+function SavingWriter() {
+  this.value = '';
+
+  this.write = function(str) {
+    this.value += str;
+  };
+}
+
+function FormatingWriter(out, format) {
+
+  var indent = [''];
+
+  this.append = function(str) {
+    out.write(str);
+
+    return this;
+  };
+
+  this.appendNewLine = function() {
+    if (format) {
+      out.write('\n');
+    }
+
+    return this;
+  };
+
+  this.appendIndent = function() {
+    if (format) {
+      out.write(indent.join('  '));
+    }
+
+    return this;
+  };
+
+  this.indent = function() {
+    indent.push('');
+    return this;
+  };
+
+  this.unindent = function() {
+    indent.pop();
+    return this;
+  };
+}
+
+/**
+ * A writer for meta-model backed document trees
+ *
+ * @param {Object} options output options to pass into the writer
+ */
+function Writer(options) {
+
+  options = (0,min_dash__WEBPACK_IMPORTED_MODULE_2__.assign)({ format: false, preamble: true }, options || {});
+
+  function toXML(tree, writer) {
+    var internalWriter = writer || new SavingWriter();
+    var formatingWriter = new FormatingWriter(internalWriter, options.format);
+
+    if (options.preamble) {
+      formatingWriter.append(XML_PREAMBLE);
+    }
+
+    new ElementSerializer().build(tree).serializeTo(formatingWriter);
+
+    if (!writer) {
+      return internalWriter.value;
+    }
+  }
+
+  return {
+    toXML: toXML
+  };
+}
+
+
+
+
+/***/ }),
+
+/***/ "./node_modules/moddle/dist/index.esm.js":
+/*!***********************************************!*\
+  !*** ./node_modules/moddle/dist/index.esm.js ***!
+  \***********************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "Moddle": () => (/* binding */ Moddle),
+/* harmony export */   "coerceType": () => (/* binding */ coerceType),
+/* harmony export */   "isBuiltInType": () => (/* binding */ isBuiltIn),
+/* harmony export */   "isSimpleType": () => (/* binding */ isSimple),
+/* harmony export */   "parseNameNS": () => (/* binding */ parseName)
+/* harmony export */ });
+/* harmony import */ var min_dash__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! min-dash */ "./node_modules/min-dash/dist/index.esm.js");
+
+
+/**
+ * Moddle base element.
+ */
+function Base() { }
+
+Base.prototype.get = function(name) {
+  return this.$model.properties.get(this, name);
+};
+
+Base.prototype.set = function(name, value) {
+  this.$model.properties.set(this, name, value);
+};
+
+/**
+ * A model element factory.
+ *
+ * @param {Moddle} model
+ * @param {Properties} properties
+ */
+function Factory(model, properties) {
+  this.model = model;
+  this.properties = properties;
+}
+
+
+Factory.prototype.createType = function(descriptor) {
+
+  var model = this.model;
+
+  var props = this.properties,
+      prototype = Object.create(Base.prototype);
+
+  // initialize default values
+  (0,min_dash__WEBPACK_IMPORTED_MODULE_0__.forEach)(descriptor.properties, function(p) {
+    if (!p.isMany && p.default !== undefined) {
+      prototype[p.name] = p.default;
+    }
+  });
+
+  props.defineModel(prototype, model);
+  props.defineDescriptor(prototype, descriptor);
+
+  var name = descriptor.ns.name;
+
+  /**
+   * The new type constructor
+   */
+  function ModdleElement(attrs) {
+    props.define(this, '$type', { value: name, enumerable: true });
+    props.define(this, '$attrs', { value: {} });
+    props.define(this, '$parent', { writable: true });
+
+    (0,min_dash__WEBPACK_IMPORTED_MODULE_0__.forEach)(attrs, (0,min_dash__WEBPACK_IMPORTED_MODULE_0__.bind)(function(val, key) {
+      this.set(key, val);
+    }, this));
+  }
+
+  ModdleElement.prototype = prototype;
+
+  ModdleElement.hasType = prototype.$instanceOf = this.model.hasType;
+
+  // static links
+  props.defineModel(ModdleElement, model);
+  props.defineDescriptor(ModdleElement, descriptor);
+
+  return ModdleElement;
+};
+
+/**
+ * Built-in moddle types
+ */
+var BUILTINS = {
+  String: true,
+  Boolean: true,
+  Integer: true,
+  Real: true,
+  Element: true
+};
+
+/**
+ * Converters for built in types from string representations
+ */
+var TYPE_CONVERTERS = {
+  String: function(s) { return s; },
+  Boolean: function(s) { return s === 'true'; },
+  Integer: function(s) { return parseInt(s, 10); },
+  Real: function(s) { return parseFloat(s, 10); }
+};
+
+/**
+ * Convert a type to its real representation
+ */
+function coerceType(type, value) {
+
+  var converter = TYPE_CONVERTERS[type];
+
+  if (converter) {
+    return converter(value);
+  } else {
+    return value;
+  }
+}
+
+/**
+ * Return whether the given type is built-in
+ */
+function isBuiltIn(type) {
+  return !!BUILTINS[type];
+}
+
+/**
+ * Return whether the given type is simple
+ */
+function isSimple(type) {
+  return !!TYPE_CONVERTERS[type];
+}
+
+/**
+ * Parses a namespaced attribute name of the form (ns:)localName to an object,
+ * given a default prefix to assume in case no explicit namespace is given.
+ *
+ * @param {String} name
+ * @param {String} [defaultPrefix] the default prefix to take, if none is present.
+ *
+ * @return {Object} the parsed name
+ */
+function parseName(name, defaultPrefix) {
+  var parts = name.split(/:/),
+      localName, prefix;
+
+  // no prefix (i.e. only local name)
+  if (parts.length === 1) {
+    localName = name;
+    prefix = defaultPrefix;
+  } else
+  // prefix + local name
+  if (parts.length === 2) {
+    localName = parts[1];
+    prefix = parts[0];
+  } else {
+    throw new Error('expected <prefix:localName> or <localName>, got ' + name);
+  }
+
+  name = (prefix ? prefix + ':' : '') + localName;
+
+  return {
+    name: name,
+    prefix: prefix,
+    localName: localName
+  };
+}
+
+/**
+ * A utility to build element descriptors.
+ */
+function DescriptorBuilder(nameNs) {
+  this.ns = nameNs;
+  this.name = nameNs.name;
+  this.allTypes = [];
+  this.allTypesByName = {};
+  this.properties = [];
+  this.propertiesByName = {};
+}
+
+
+DescriptorBuilder.prototype.build = function() {
+  return (0,min_dash__WEBPACK_IMPORTED_MODULE_0__.pick)(this, [
+    'ns',
+    'name',
+    'allTypes',
+    'allTypesByName',
+    'properties',
+    'propertiesByName',
+    'bodyProperty',
+    'idProperty'
+  ]);
+};
+
+/**
+ * Add property at given index.
+ *
+ * @param {Object} p
+ * @param {Number} [idx]
+ * @param {Boolean} [validate=true]
+ */
+DescriptorBuilder.prototype.addProperty = function(p, idx, validate) {
+
+  if (typeof idx === 'boolean') {
+    validate = idx;
+    idx = undefined;
+  }
+
+  this.addNamedProperty(p, validate !== false);
+
+  var properties = this.properties;
+
+  if (idx !== undefined) {
+    properties.splice(idx, 0, p);
+  } else {
+    properties.push(p);
+  }
+};
+
+
+DescriptorBuilder.prototype.replaceProperty = function(oldProperty, newProperty, replace) {
+  var oldNameNs = oldProperty.ns;
+
+  var props = this.properties,
+      propertiesByName = this.propertiesByName,
+      rename = oldProperty.name !== newProperty.name;
+
+  if (oldProperty.isId) {
+    if (!newProperty.isId) {
+      throw new Error(
+        'property <' + newProperty.ns.name + '> must be id property ' +
+        'to refine <' + oldProperty.ns.name + '>');
+    }
+
+    this.setIdProperty(newProperty, false);
+  }
+
+  if (oldProperty.isBody) {
+
+    if (!newProperty.isBody) {
+      throw new Error(
+        'property <' + newProperty.ns.name + '> must be body property ' +
+        'to refine <' + oldProperty.ns.name + '>');
+    }
+
+    // TODO: Check compatibility
+    this.setBodyProperty(newProperty, false);
+  }
+
+  // validate existence and get location of old property
+  var idx = props.indexOf(oldProperty);
+  if (idx === -1) {
+    throw new Error('property <' + oldNameNs.name + '> not found in property list');
+  }
+
+  // remove old property
+  props.splice(idx, 1);
+
+  // replacing the named property is intentional
+  //
+  //  * validate only if this is a "rename" operation
+  //  * add at specific index unless we "replace"
+  //
+  this.addProperty(newProperty, replace ? undefined : idx, rename);
+
+  // make new property available under old name
+  propertiesByName[oldNameNs.name] = propertiesByName[oldNameNs.localName] = newProperty;
+};
+
+
+DescriptorBuilder.prototype.redefineProperty = function(p, targetPropertyName, replace) {
+
+  var nsPrefix = p.ns.prefix;
+  var parts = targetPropertyName.split('#');
+
+  var name = parseName(parts[0], nsPrefix);
+  var attrName = parseName(parts[1], name.prefix).name;
+
+  var redefinedProperty = this.propertiesByName[attrName];
+  if (!redefinedProperty) {
+    throw new Error('refined property <' + attrName + '> not found');
+  } else {
+    this.replaceProperty(redefinedProperty, p, replace);
+  }
+
+  delete p.redefines;
+};
+
+DescriptorBuilder.prototype.addNamedProperty = function(p, validate) {
+  var ns = p.ns,
+      propsByName = this.propertiesByName;
+
+  if (validate) {
+    this.assertNotDefined(p, ns.name);
+    this.assertNotDefined(p, ns.localName);
+  }
+
+  propsByName[ns.name] = propsByName[ns.localName] = p;
+};
+
+DescriptorBuilder.prototype.removeNamedProperty = function(p) {
+  var ns = p.ns,
+      propsByName = this.propertiesByName;
+
+  delete propsByName[ns.name];
+  delete propsByName[ns.localName];
+};
+
+DescriptorBuilder.prototype.setBodyProperty = function(p, validate) {
+
+  if (validate && this.bodyProperty) {
+    throw new Error(
+      'body property defined multiple times ' +
+      '(<' + this.bodyProperty.ns.name + '>, <' + p.ns.name + '>)');
+  }
+
+  this.bodyProperty = p;
+};
+
+DescriptorBuilder.prototype.setIdProperty = function(p, validate) {
+
+  if (validate && this.idProperty) {
+    throw new Error(
+      'id property defined multiple times ' +
+      '(<' + this.idProperty.ns.name + '>, <' + p.ns.name + '>)');
+  }
+
+  this.idProperty = p;
+};
+
+DescriptorBuilder.prototype.assertNotDefined = function(p, name) {
+  var propertyName = p.name,
+      definedProperty = this.propertiesByName[propertyName];
+
+  if (definedProperty) {
+    throw new Error(
+      'property <' + propertyName + '> already defined; ' +
+      'override of <' + definedProperty.definedBy.ns.name + '#' + definedProperty.ns.name + '> by ' +
+      '<' + p.definedBy.ns.name + '#' + p.ns.name + '> not allowed without redefines');
+  }
+};
+
+DescriptorBuilder.prototype.hasProperty = function(name) {
+  return this.propertiesByName[name];
+};
+
+DescriptorBuilder.prototype.addTrait = function(t, inherited) {
+
+  var typesByName = this.allTypesByName,
+      types = this.allTypes;
+
+  var typeName = t.name;
+
+  if (typeName in typesByName) {
+    return;
+  }
+
+  (0,min_dash__WEBPACK_IMPORTED_MODULE_0__.forEach)(t.properties, (0,min_dash__WEBPACK_IMPORTED_MODULE_0__.bind)(function(p) {
+
+    // clone property to allow extensions
+    p = (0,min_dash__WEBPACK_IMPORTED_MODULE_0__.assign)({}, p, {
+      name: p.ns.localName,
+      inherited: inherited
+    });
+
+    Object.defineProperty(p, 'definedBy', {
+      value: t
+    });
+
+    var replaces = p.replaces,
+        redefines = p.redefines;
+
+    // add replace/redefine support
+    if (replaces || redefines) {
+      this.redefineProperty(p, replaces || redefines, replaces);
+    } else {
+      if (p.isBody) {
+        this.setBodyProperty(p);
+      }
+      if (p.isId) {
+        this.setIdProperty(p);
+      }
+      this.addProperty(p);
+    }
+  }, this));
+
+  types.push(t);
+  typesByName[typeName] = t;
+};
+
+/**
+ * A registry of Moddle packages.
+ *
+ * @param {Array<Package>} packages
+ * @param {Properties} properties
+ */
+function Registry(packages, properties) {
+  this.packageMap = {};
+  this.typeMap = {};
+
+  this.packages = [];
+
+  this.properties = properties;
+
+  (0,min_dash__WEBPACK_IMPORTED_MODULE_0__.forEach)(packages, (0,min_dash__WEBPACK_IMPORTED_MODULE_0__.bind)(this.registerPackage, this));
+}
+
+
+Registry.prototype.getPackage = function(uriOrPrefix) {
+  return this.packageMap[uriOrPrefix];
+};
+
+Registry.prototype.getPackages = function() {
+  return this.packages;
+};
+
+
+Registry.prototype.registerPackage = function(pkg) {
+
+  // copy package
+  pkg = (0,min_dash__WEBPACK_IMPORTED_MODULE_0__.assign)({}, pkg);
+
+  var pkgMap = this.packageMap;
+
+  ensureAvailable(pkgMap, pkg, 'prefix');
+  ensureAvailable(pkgMap, pkg, 'uri');
+
+  // register types
+  (0,min_dash__WEBPACK_IMPORTED_MODULE_0__.forEach)(pkg.types, (0,min_dash__WEBPACK_IMPORTED_MODULE_0__.bind)(function(descriptor) {
+    this.registerType(descriptor, pkg);
+  }, this));
+
+  pkgMap[pkg.uri] = pkgMap[pkg.prefix] = pkg;
+  this.packages.push(pkg);
+};
+
+
+/**
+ * Register a type from a specific package with us
+ */
+Registry.prototype.registerType = function(type, pkg) {
+
+  type = (0,min_dash__WEBPACK_IMPORTED_MODULE_0__.assign)({}, type, {
+    superClass: (type.superClass || []).slice(),
+    extends: (type.extends || []).slice(),
+    properties: (type.properties || []).slice(),
+    meta: (0,min_dash__WEBPACK_IMPORTED_MODULE_0__.assign)((type.meta || {}))
+  });
+
+  var ns = parseName(type.name, pkg.prefix),
+      name = ns.name,
+      propertiesByName = {};
+
+  // parse properties
+  (0,min_dash__WEBPACK_IMPORTED_MODULE_0__.forEach)(type.properties, (0,min_dash__WEBPACK_IMPORTED_MODULE_0__.bind)(function(p) {
+
+    // namespace property names
+    var propertyNs = parseName(p.name, ns.prefix),
+        propertyName = propertyNs.name;
+
+    // namespace property types
+    if (!isBuiltIn(p.type)) {
+      p.type = parseName(p.type, propertyNs.prefix).name;
+    }
+
+    (0,min_dash__WEBPACK_IMPORTED_MODULE_0__.assign)(p, {
+      ns: propertyNs,
+      name: propertyName
+    });
+
+    propertiesByName[propertyName] = p;
+  }, this));
+
+  // update ns + name
+  (0,min_dash__WEBPACK_IMPORTED_MODULE_0__.assign)(type, {
+    ns: ns,
+    name: name,
+    propertiesByName: propertiesByName
+  });
+
+  (0,min_dash__WEBPACK_IMPORTED_MODULE_0__.forEach)(type.extends, (0,min_dash__WEBPACK_IMPORTED_MODULE_0__.bind)(function(extendsName) {
+    var extended = this.typeMap[extendsName];
+
+    extended.traits = extended.traits || [];
+    extended.traits.push(name);
+  }, this));
+
+  // link to package
+  this.definePackage(type, pkg);
+
+  // register
+  this.typeMap[name] = type;
+};
+
+
+/**
+ * Traverse the type hierarchy from bottom to top,
+ * calling iterator with (type, inherited) for all elements in
+ * the inheritance chain.
+ *
+ * @param {Object} nsName
+ * @param {Function} iterator
+ * @param {Boolean} [trait=false]
+ */
+Registry.prototype.mapTypes = function(nsName, iterator, trait) {
+
+  var type = isBuiltIn(nsName.name) ? { name: nsName.name } : this.typeMap[nsName.name];
+
+  var self = this;
+
+  /**
+   * Traverse the selected trait.
+   *
+   * @param {String} cls
+   */
+  function traverseTrait(cls) {
+    return traverseSuper(cls, true);
+  }
+
+  /**
+   * Traverse the selected super type or trait
+   *
+   * @param {String} cls
+   * @param {Boolean} [trait=false]
+   */
+  function traverseSuper(cls, trait) {
+    var parentNs = parseName(cls, isBuiltIn(cls) ? '' : nsName.prefix);
+    self.mapTypes(parentNs, iterator, trait);
+  }
+
+  if (!type) {
+    throw new Error('unknown type <' + nsName.name + '>');
+  }
+
+  (0,min_dash__WEBPACK_IMPORTED_MODULE_0__.forEach)(type.superClass, trait ? traverseTrait : traverseSuper);
+
+  // call iterator with (type, inherited=!trait)
+  iterator(type, !trait);
+
+  (0,min_dash__WEBPACK_IMPORTED_MODULE_0__.forEach)(type.traits, traverseTrait);
+};
+
+
+/**
+ * Returns the effective descriptor for a type.
+ *
+ * @param  {String} type the namespaced name (ns:localName) of the type
+ *
+ * @return {Descriptor} the resulting effective descriptor
+ */
+Registry.prototype.getEffectiveDescriptor = function(name) {
+
+  var nsName = parseName(name);
+
+  var builder = new DescriptorBuilder(nsName);
+
+  this.mapTypes(nsName, function(type, inherited) {
+    builder.addTrait(type, inherited);
+  });
+
+  var descriptor = builder.build();
+
+  // define package link
+  this.definePackage(descriptor, descriptor.allTypes[descriptor.allTypes.length - 1].$pkg);
+
+  return descriptor;
+};
+
+
+Registry.prototype.definePackage = function(target, pkg) {
+  this.properties.define(target, '$pkg', { value: pkg });
+};
+
+
+
+///////// helpers ////////////////////////////
+
+function ensureAvailable(packageMap, pkg, identifierKey) {
+
+  var value = pkg[identifierKey];
+
+  if (value in packageMap) {
+    throw new Error('package with ' + identifierKey + ' <' + value + '> already defined');
+  }
+}
+
+/**
+ * A utility that gets and sets properties of model elements.
+ *
+ * @param {Model} model
+ */
+function Properties(model) {
+  this.model = model;
+}
+
+
+/**
+ * Sets a named property on the target element.
+ * If the value is undefined, the property gets deleted.
+ *
+ * @param {Object} target
+ * @param {String} name
+ * @param {Object} value
+ */
+Properties.prototype.set = function(target, name, value) {
+
+  var property = this.model.getPropertyDescriptor(target, name);
+
+  var propertyName = property && property.name;
+
+  if (isUndefined(value)) {
+    // unset the property, if the specified value is undefined;
+    // delete from $attrs (for extensions) or the target itself
+    if (property) {
+      delete target[propertyName];
+    } else {
+      delete target.$attrs[name];
+    }
+  } else {
+    // set the property, defining well defined properties on the fly
+    // or simply updating them in target.$attrs (for extensions)
+    if (property) {
+      if (propertyName in target) {
+        target[propertyName] = value;
+      } else {
+        defineProperty(target, property, value);
+      }
+    } else {
+      target.$attrs[name] = value;
+    }
+  }
+};
+
+/**
+ * Returns the named property of the given element
+ *
+ * @param  {Object} target
+ * @param  {String} name
+ *
+ * @return {Object}
+ */
+Properties.prototype.get = function(target, name) {
+
+  var property = this.model.getPropertyDescriptor(target, name);
+
+  if (!property) {
+    return target.$attrs[name];
+  }
+
+  var propertyName = property.name;
+
+  // check if access to collection property and lazily initialize it
+  if (!target[propertyName] && property.isMany) {
+    defineProperty(target, property, []);
+  }
+
+  return target[propertyName];
+};
+
+
+/**
+ * Define a property on the target element
+ *
+ * @param  {Object} target
+ * @param  {String} name
+ * @param  {Object} options
+ */
+Properties.prototype.define = function(target, name, options) {
+  Object.defineProperty(target, name, options);
+};
+
+
+/**
+ * Define the descriptor for an element
+ */
+Properties.prototype.defineDescriptor = function(target, descriptor) {
+  this.define(target, '$descriptor', { value: descriptor });
+};
+
+/**
+ * Define the model for an element
+ */
+Properties.prototype.defineModel = function(target, model) {
+  this.define(target, '$model', { value: model });
+};
+
+
+function isUndefined(val) {
+  return typeof val === 'undefined';
+}
+
+function defineProperty(target, property, value) {
+  Object.defineProperty(target, property.name, {
+    enumerable: !property.isReference,
+    writable: true,
+    value: value,
+    configurable: true
+  });
+}
+
+//// Moddle implementation /////////////////////////////////////////////////
+
+/**
+ * @class Moddle
+ *
+ * A model that can be used to create elements of a specific type.
+ *
+ * @example
+ *
+ * var Moddle = require('moddle');
+ *
+ * var pkg = {
+ *   name: 'mypackage',
+ *   prefix: 'my',
+ *   types: [
+ *     { name: 'Root' }
+ *   ]
+ * };
+ *
+ * var moddle = new Moddle([pkg]);
+ *
+ * @param {Array<Package>} packages the packages to contain
+ */
+function Moddle(packages) {
+
+  this.properties = new Properties(this);
+
+  this.factory = new Factory(this, this.properties);
+  this.registry = new Registry(packages, this.properties);
+
+  this.typeCache = {};
+}
+
+
+/**
+ * Create an instance of the specified type.
+ *
+ * @method Moddle#create
+ *
+ * @example
+ *
+ * var foo = moddle.create('my:Foo');
+ * var bar = moddle.create('my:Bar', { id: 'BAR_1' });
+ *
+ * @param  {String|Object} descriptor the type descriptor or name know to the model
+ * @param  {Object} attrs   a number of attributes to initialize the model instance with
+ * @return {Object}         model instance
+ */
+Moddle.prototype.create = function(descriptor, attrs) {
+  var Type = this.getType(descriptor);
+
+  if (!Type) {
+    throw new Error('unknown type <' + descriptor + '>');
+  }
+
+  return new Type(attrs);
+};
+
+
+/**
+ * Returns the type representing a given descriptor
+ *
+ * @method Moddle#getType
+ *
+ * @example
+ *
+ * var Foo = moddle.getType('my:Foo');
+ * var foo = new Foo({ 'id' : 'FOO_1' });
+ *
+ * @param  {String|Object} descriptor the type descriptor or name know to the model
+ * @return {Object}         the type representing the descriptor
+ */
+Moddle.prototype.getType = function(descriptor) {
+
+  var cache = this.typeCache;
+
+  var name = (0,min_dash__WEBPACK_IMPORTED_MODULE_0__.isString)(descriptor) ? descriptor : descriptor.ns.name;
+
+  var type = cache[name];
+
+  if (!type) {
+    descriptor = this.registry.getEffectiveDescriptor(name);
+    type = cache[name] = this.factory.createType(descriptor);
+  }
+
+  return type;
+};
+
+
+/**
+ * Creates an any-element type to be used within model instances.
+ *
+ * This can be used to create custom elements that lie outside the meta-model.
+ * The created element contains all the meta-data required to serialize it
+ * as part of meta-model elements.
+ *
+ * @method Moddle#createAny
+ *
+ * @example
+ *
+ * var foo = moddle.createAny('vendor:Foo', 'http://vendor', {
+ *   value: 'bar'
+ * });
+ *
+ * var container = moddle.create('my:Container', 'http://my', {
+ *   any: [ foo ]
+ * });
+ *
+ * // go ahead and serialize the stuff
+ *
+ *
+ * @param  {String} name  the name of the element
+ * @param  {String} nsUri the namespace uri of the element
+ * @param  {Object} [properties] a map of properties to initialize the instance with
+ * @return {Object} the any type instance
+ */
+Moddle.prototype.createAny = function(name, nsUri, properties) {
+
+  var nameNs = parseName(name);
+
+  var element = {
+    $type: name,
+    $instanceOf: function(type) {
+      return type === this.$type;
+    }
+  };
+
+  var descriptor = {
+    name: name,
+    isGeneric: true,
+    ns: {
+      prefix: nameNs.prefix,
+      localName: nameNs.localName,
+      uri: nsUri
+    }
+  };
+
+  this.properties.defineDescriptor(element, descriptor);
+  this.properties.defineModel(element, this);
+  this.properties.define(element, '$parent', { enumerable: false, writable: true });
+
+  (0,min_dash__WEBPACK_IMPORTED_MODULE_0__.forEach)(properties, function(a, key) {
+    if ((0,min_dash__WEBPACK_IMPORTED_MODULE_0__.isObject)(a) && a.value !== undefined) {
+      element[a.name] = a.value;
+    } else {
+      element[key] = a;
+    }
+  });
+
+  return element;
+};
+
+/**
+ * Returns a registered package by uri or prefix
+ *
+ * @return {Object} the package
+ */
+Moddle.prototype.getPackage = function(uriOrPrefix) {
+  return this.registry.getPackage(uriOrPrefix);
+};
+
+/**
+ * Returns a snapshot of all known packages
+ *
+ * @return {Object} the package
+ */
+Moddle.prototype.getPackages = function() {
+  return this.registry.getPackages();
+};
+
+/**
+ * Returns the descriptor for an element
+ */
+Moddle.prototype.getElementDescriptor = function(element) {
+  return element.$descriptor;
+};
+
+/**
+ * Returns true if the given descriptor or instance
+ * represents the given type.
+ *
+ * May be applied to this, if element is omitted.
+ */
+Moddle.prototype.hasType = function(element, type) {
+  if (type === undefined) {
+    type = element;
+    element = this;
+  }
+
+  var descriptor = element.$model.getElementDescriptor(element);
+
+  return (type in descriptor.allTypesByName);
+};
+
+/**
+ * Returns the descriptor of an elements named property
+ */
+Moddle.prototype.getPropertyDescriptor = function(element, property) {
+  return this.getElementDescriptor(element).propertiesByName[property];
+};
+
+/**
+ * Returns a mapped type's descriptor
+ */
+Moddle.prototype.getTypeDescriptor = function(type) {
+  return this.registry.typeMap[type];
+};
+
+
 
 
 /***/ }),
@@ -4548,6 +9903,1104 @@ function _extends() { _extends = Object.assign || function (target) { for (var i
   d: "M9.398 15.32L.602 13.684V2.316L9.398.68zM.801 13.516l8.398 1.562V.922L.801 2.484zm0 0",
   fill: "#3c5d49"
 })));
+
+/***/ }),
+
+/***/ "./node_modules/saxen/dist/index.esm.js":
+/*!**********************************************!*\
+  !*** ./node_modules/saxen/dist/index.esm.js ***!
+  \**********************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "Parser": () => (/* binding */ Parser),
+/* harmony export */   "decode": () => (/* binding */ decodeEntities)
+/* harmony export */ });
+var fromCharCode = String.fromCharCode;
+
+var hasOwnProperty = Object.prototype.hasOwnProperty;
+
+var ENTITY_PATTERN = /&#(\d+);|&#x([0-9a-f]+);|&(\w+);/ig;
+
+var ENTITY_MAPPING = {
+  'amp': '&',
+  'apos': '\'',
+  'gt': '>',
+  'lt': '<',
+  'quot': '"'
+};
+
+// map UPPERCASE variants of supported special chars
+Object.keys(ENTITY_MAPPING).forEach(function(k) {
+  ENTITY_MAPPING[k.toUpperCase()] = ENTITY_MAPPING[k];
+});
+
+
+function replaceEntities(_, d, x, z) {
+
+  // reserved names, i.e. &nbsp;
+  if (z) {
+    if (hasOwnProperty.call(ENTITY_MAPPING, z)) {
+      return ENTITY_MAPPING[z];
+    } else {
+
+      // fall back to original value
+      return '&' + z + ';';
+    }
+  }
+
+  // decimal encoded char
+  if (d) {
+    return fromCharCode(d);
+  }
+
+  // hex encoded char
+  return fromCharCode(parseInt(x, 16));
+}
+
+
+/**
+ * A basic entity decoder that can decode a minimal
+ * sub-set of reserved names (&amp;) as well as
+ * hex (&#xaaf;) and decimal (&#1231;) encoded characters.
+ *
+ * @param {string} str
+ *
+ * @return {string} decoded string
+ */
+function decodeEntities(s) {
+  if (s.length > 3 && s.indexOf('&') !== -1) {
+    return s.replace(ENTITY_PATTERN, replaceEntities);
+  }
+
+  return s;
+}
+
+var XSI_URI = 'http://www.w3.org/2001/XMLSchema-instance';
+var XSI_PREFIX = 'xsi';
+var XSI_TYPE = 'xsi:type';
+
+var NON_WHITESPACE_OUTSIDE_ROOT_NODE = 'non-whitespace outside of root node';
+
+function error(msg) {
+  return new Error(msg);
+}
+
+function missingNamespaceForPrefix(prefix) {
+  return 'missing namespace for prefix <' + prefix + '>';
+}
+
+function getter(getFn) {
+  return {
+    'get': getFn,
+    'enumerable': true
+  };
+}
+
+function cloneNsMatrix(nsMatrix) {
+  var clone = {}, key;
+  for (key in nsMatrix) {
+    clone[key] = nsMatrix[key];
+  }
+  return clone;
+}
+
+function uriPrefix(prefix) {
+  return prefix + '$uri';
+}
+
+function buildNsMatrix(nsUriToPrefix) {
+  var nsMatrix = {},
+      uri,
+      prefix;
+
+  for (uri in nsUriToPrefix) {
+    prefix = nsUriToPrefix[uri];
+    nsMatrix[prefix] = prefix;
+    nsMatrix[uriPrefix(prefix)] = uri;
+  }
+
+  return nsMatrix;
+}
+
+function noopGetContext() {
+  return { 'line': 0, 'column': 0 };
+}
+
+function throwFunc(err) {
+  throw err;
+}
+
+/**
+ * Creates a new parser with the given options.
+ *
+ * @constructor
+ *
+ * @param  {!Object<string, ?>=} options
+ */
+function Parser(options) {
+
+  if (!this) {
+    return new Parser(options);
+  }
+
+  var proxy = options && options['proxy'];
+
+  var onText,
+      onOpenTag,
+      onCloseTag,
+      onCDATA,
+      onError = throwFunc,
+      onWarning,
+      onComment,
+      onQuestion,
+      onAttention;
+
+  var getContext = noopGetContext;
+
+  /**
+   * Do we need to parse the current elements attributes for namespaces?
+   *
+   * @type {boolean}
+   */
+  var maybeNS = false;
+
+  /**
+   * Do we process namespaces at all?
+   *
+   * @type {boolean}
+   */
+  var isNamespace = false;
+
+  /**
+   * The caught error returned on parse end
+   *
+   * @type {Error}
+   */
+  var returnError = null;
+
+  /**
+   * Should we stop parsing?
+   *
+   * @type {boolean}
+   */
+  var parseStop = false;
+
+  /**
+   * A map of { uri: prefix } used by the parser.
+   *
+   * This map will ensure we can normalize prefixes during processing;
+   * for each uri, only one prefix will be exposed to the handlers.
+   *
+   * @type {!Object<string, string>}}
+   */
+  var nsUriToPrefix;
+
+  /**
+   * Handle parse error.
+   *
+   * @param  {string|Error} err
+   */
+  function handleError(err) {
+    if (!(err instanceof Error)) {
+      err = error(err);
+    }
+
+    returnError = err;
+
+    onError(err, getContext);
+  }
+
+  /**
+   * Handle parse error.
+   *
+   * @param  {string|Error} err
+   */
+  function handleWarning(err) {
+
+    if (!onWarning) {
+      return;
+    }
+
+    if (!(err instanceof Error)) {
+      err = error(err);
+    }
+
+    onWarning(err, getContext);
+  }
+
+  /**
+   * Register parse listener.
+   *
+   * @param  {string}   name
+   * @param  {Function} cb
+   *
+   * @return {Parser}
+   */
+  this['on'] = function(name, cb) {
+
+    if (typeof cb !== 'function') {
+      throw error('required args <name, cb>');
+    }
+
+    switch (name) {
+    case 'openTag': onOpenTag = cb; break;
+    case 'text': onText = cb; break;
+    case 'closeTag': onCloseTag = cb; break;
+    case 'error': onError = cb; break;
+    case 'warn': onWarning = cb; break;
+    case 'cdata': onCDATA = cb; break;
+    case 'attention': onAttention = cb; break; // <!XXXXX zzzz="eeee">
+    case 'question': onQuestion = cb; break; // <? ....  ?>
+    case 'comment': onComment = cb; break;
+    default:
+      throw error('unsupported event: ' + name);
+    }
+
+    return this;
+  };
+
+  /**
+   * Set the namespace to prefix mapping.
+   *
+   * @example
+   *
+   * parser.ns({
+   *   'http://foo': 'foo',
+   *   'http://bar': 'bar'
+   * });
+   *
+   * @param  {!Object<string, string>} nsMap
+   *
+   * @return {Parser}
+   */
+  this['ns'] = function(nsMap) {
+
+    if (typeof nsMap === 'undefined') {
+      nsMap = {};
+    }
+
+    if (typeof nsMap !== 'object') {
+      throw error('required args <nsMap={}>');
+    }
+
+    var _nsUriToPrefix = {}, k;
+
+    for (k in nsMap) {
+      _nsUriToPrefix[k] = nsMap[k];
+    }
+
+    // FORCE default mapping for schema instance
+    _nsUriToPrefix[XSI_URI] = XSI_PREFIX;
+
+    isNamespace = true;
+    nsUriToPrefix = _nsUriToPrefix;
+
+    return this;
+  };
+
+  /**
+   * Parse xml string.
+   *
+   * @param  {string} xml
+   *
+   * @return {Error} returnError, if not thrown
+   */
+  this['parse'] = function(xml) {
+    if (typeof xml !== 'string') {
+      throw error('required args <xml=string>');
+    }
+
+    returnError = null;
+
+    parse(xml);
+
+    getContext = noopGetContext;
+    parseStop = false;
+
+    return returnError;
+  };
+
+  /**
+   * Stop parsing.
+   */
+  this['stop'] = function() {
+    parseStop = true;
+  };
+
+  /**
+   * Parse string, invoking configured listeners on element.
+   *
+   * @param  {string} xml
+   */
+  function parse(xml) {
+    var nsMatrixStack = isNamespace ? [] : null,
+        nsMatrix = isNamespace ? buildNsMatrix(nsUriToPrefix) : null,
+        _nsMatrix,
+        nodeStack = [],
+        anonymousNsCount = 0,
+        tagStart = false,
+        tagEnd = false,
+        i = 0, j = 0,
+        x, y, q, w, v,
+        xmlns,
+        elementName,
+        _elementName,
+        elementProxy
+        ;
+
+    var attrsString = '',
+        attrsStart = 0,
+        cachedAttrs // false = parsed with errors, null = needs parsing
+        ;
+
+    /**
+     * Parse attributes on demand and returns the parsed attributes.
+     *
+     * Return semantics: (1) `false` on attribute parse error,
+     * (2) object hash on extracted attrs.
+     *
+     * @return {boolean|Object}
+     */
+    function getAttrs() {
+      if (cachedAttrs !== null) {
+        return cachedAttrs;
+      }
+
+      var nsUri,
+          nsUriPrefix,
+          nsName,
+          defaultAlias = isNamespace && nsMatrix['xmlns'],
+          attrList = isNamespace && maybeNS ? [] : null,
+          i = attrsStart,
+          s = attrsString,
+          l = s.length,
+          hasNewMatrix,
+          newalias,
+          value,
+          alias,
+          name,
+          attrs = {},
+          seenAttrs = {},
+          skipAttr,
+          w,
+          j;
+
+      parseAttr:
+      for (; i < l; i++) {
+        skipAttr = false;
+        w = s.charCodeAt(i);
+
+        if (w === 32 || (w < 14 && w > 8)) { // WHITESPACE={ \f\n\r\t\v}
+          continue;
+        }
+
+        // wait for non whitespace character
+        if (w < 65 || w > 122 || (w > 90 && w < 97)) {
+          if (w !== 95 && w !== 58) { // char 95"_" 58":"
+            handleWarning('illegal first char attribute name');
+            skipAttr = true;
+          }
+        }
+
+        // parse attribute name
+        for (j = i + 1; j < l; j++) {
+          w = s.charCodeAt(j);
+
+          if (
+            w > 96 && w < 123 ||
+            w > 64 && w < 91 ||
+            w > 47 && w < 59 ||
+            w === 46 || // '.'
+            w === 45 || // '-'
+            w === 95 // '_'
+          ) {
+            continue;
+          }
+
+          // unexpected whitespace
+          if (w === 32 || (w < 14 && w > 8)) { // WHITESPACE
+            handleWarning('missing attribute value');
+            i = j;
+
+            continue parseAttr;
+          }
+
+          // expected "="
+          if (w === 61) { // "=" == 61
+            break;
+          }
+
+          handleWarning('illegal attribute name char');
+          skipAttr = true;
+        }
+
+        name = s.substring(i, j);
+
+        if (name === 'xmlns:xmlns') {
+          handleWarning('illegal declaration of xmlns');
+          skipAttr = true;
+        }
+
+        w = s.charCodeAt(j + 1);
+
+        if (w === 34) { // '"'
+          j = s.indexOf('"', i = j + 2);
+
+          if (j === -1) {
+            j = s.indexOf('\'', i);
+
+            if (j !== -1) {
+              handleWarning('attribute value quote missmatch');
+              skipAttr = true;
+            }
+          }
+
+        } else if (w === 39) { // "'"
+          j = s.indexOf('\'', i = j + 2);
+
+          if (j === -1) {
+            j = s.indexOf('"', i);
+
+            if (j !== -1) {
+              handleWarning('attribute value quote missmatch');
+              skipAttr = true;
+            }
+          }
+
+        } else {
+          handleWarning('missing attribute value quotes');
+          skipAttr = true;
+
+          // skip to next space
+          for (j = j + 1; j < l; j++) {
+            w = s.charCodeAt(j + 1);
+
+            if (w === 32 || (w < 14 && w > 8)) { // WHITESPACE
+              break;
+            }
+          }
+
+        }
+
+        if (j === -1) {
+          handleWarning('missing closing quotes');
+
+          j = l;
+          skipAttr = true;
+        }
+
+        if (!skipAttr) {
+          value = s.substring(i, j);
+        }
+
+        i = j;
+
+        // ensure SPACE follows attribute
+        // skip illegal content otherwise
+        // example a="b"c
+        for (; j + 1 < l; j++) {
+          w = s.charCodeAt(j + 1);
+
+          if (w === 32 || (w < 14 && w > 8)) { // WHITESPACE
+            break;
+          }
+
+          // FIRST ILLEGAL CHAR
+          if (i === j) {
+            handleWarning('illegal character after attribute end');
+            skipAttr = true;
+          }
+        }
+
+        // advance cursor to next attribute
+        i = j + 1;
+
+        if (skipAttr) {
+          continue parseAttr;
+        }
+
+        // check attribute re-declaration
+        if (name in seenAttrs) {
+          handleWarning('attribute <' + name + '> already defined');
+          continue;
+        }
+
+        seenAttrs[name] = true;
+
+        if (!isNamespace) {
+          attrs[name] = value;
+          continue;
+        }
+
+        // try to extract namespace information
+        if (maybeNS) {
+          newalias = (
+            name === 'xmlns'
+              ? 'xmlns'
+              : (name.charCodeAt(0) === 120 && name.substr(0, 6) === 'xmlns:')
+                ? name.substr(6)
+                : null
+          );
+
+          // handle xmlns(:alias) assignment
+          if (newalias !== null) {
+            nsUri = decodeEntities(value);
+            nsUriPrefix = uriPrefix(newalias);
+
+            alias = nsUriToPrefix[nsUri];
+
+            if (!alias) {
+
+              // no prefix defined or prefix collision
+              if (
+                (newalias === 'xmlns') ||
+                (nsUriPrefix in nsMatrix && nsMatrix[nsUriPrefix] !== nsUri)
+              ) {
+
+                // alocate free ns prefix
+                do {
+                  alias = 'ns' + (anonymousNsCount++);
+                } while (typeof nsMatrix[alias] !== 'undefined');
+              } else {
+                alias = newalias;
+              }
+
+              nsUriToPrefix[nsUri] = alias;
+            }
+
+            if (nsMatrix[newalias] !== alias) {
+              if (!hasNewMatrix) {
+                nsMatrix = cloneNsMatrix(nsMatrix);
+                hasNewMatrix = true;
+              }
+
+              nsMatrix[newalias] = alias;
+              if (newalias === 'xmlns') {
+                nsMatrix[uriPrefix(alias)] = nsUri;
+                defaultAlias = alias;
+              }
+
+              nsMatrix[nsUriPrefix] = nsUri;
+            }
+
+            // expose xmlns(:asd)="..." in attributes
+            attrs[name] = value;
+            continue;
+          }
+
+          // collect attributes until all namespace
+          // declarations are processed
+          attrList.push(name, value);
+          continue;
+
+        } /** end if (maybeNs) */
+
+        // handle attributes on element without
+        // namespace declarations
+        w = name.indexOf(':');
+        if (w === -1) {
+          attrs[name] = value;
+          continue;
+        }
+
+        // normalize ns attribute name
+        if (!(nsName = nsMatrix[name.substring(0, w)])) {
+          handleWarning(missingNamespaceForPrefix(name.substring(0, w)));
+          continue;
+        }
+
+        name = defaultAlias === nsName
+          ? name.substr(w + 1)
+          : nsName + name.substr(w);
+
+        // end: normalize ns attribute name
+
+        // normalize xsi:type ns attribute value
+        if (name === XSI_TYPE) {
+          w = value.indexOf(':');
+
+          if (w !== -1) {
+            nsName = value.substring(0, w);
+
+            // handle default prefixes, i.e. xs:String gracefully
+            nsName = nsMatrix[nsName] || nsName;
+            value = nsName + value.substring(w);
+          } else {
+            value = defaultAlias + ':' + value;
+          }
+        }
+
+        // end: normalize xsi:type ns attribute value
+
+        attrs[name] = value;
+      }
+
+
+      // handle deferred, possibly namespaced attributes
+      if (maybeNS) {
+
+        // normalize captured attributes
+        for (i = 0, l = attrList.length; i < l; i++) {
+
+          name = attrList[i++];
+          value = attrList[i];
+
+          w = name.indexOf(':');
+
+          if (w !== -1) {
+
+            // normalize ns attribute name
+            if (!(nsName = nsMatrix[name.substring(0, w)])) {
+              handleWarning(missingNamespaceForPrefix(name.substring(0, w)));
+              continue;
+            }
+
+            name = defaultAlias === nsName
+              ? name.substr(w + 1)
+              : nsName + name.substr(w);
+
+            // end: normalize ns attribute name
+
+            // normalize xsi:type ns attribute value
+            if (name === XSI_TYPE) {
+              w = value.indexOf(':');
+
+              if (w !== -1) {
+                nsName = value.substring(0, w);
+
+                // handle default prefixes, i.e. xs:String gracefully
+                nsName = nsMatrix[nsName] || nsName;
+                value = nsName + value.substring(w);
+              } else {
+                value = defaultAlias + ':' + value;
+              }
+            }
+
+            // end: normalize xsi:type ns attribute value
+          }
+
+          attrs[name] = value;
+        }
+
+        // end: normalize captured attributes
+      }
+
+      return cachedAttrs = attrs;
+    }
+
+    /**
+     * Extract the parse context { line, column, part }
+     * from the current parser position.
+     *
+     * @return {Object} parse context
+     */
+    function getParseContext() {
+      var splitsRe = /(\r\n|\r|\n)/g;
+
+      var line = 0;
+      var column = 0;
+      var startOfLine = 0;
+      var endOfLine = j;
+      var match;
+      var data;
+
+      while (i >= startOfLine) {
+
+        match = splitsRe.exec(xml);
+
+        if (!match) {
+          break;
+        }
+
+        // end of line = (break idx + break chars)
+        endOfLine = match[0].length + match.index;
+
+        if (endOfLine > i) {
+          break;
+        }
+
+        // advance to next line
+        line += 1;
+
+        startOfLine = endOfLine;
+      }
+
+      // EOF errors
+      if (i == -1) {
+        column = endOfLine;
+        data = xml.substring(j);
+      } else
+
+      // start errors
+      if (j === 0) {
+        data = xml.substring(j, i);
+      }
+
+      // other errors
+      else {
+        column = i - startOfLine;
+        data = (j == -1 ? xml.substring(i) : xml.substring(i, j + 1));
+      }
+
+      return {
+        'data': data,
+        'line': line,
+        'column': column
+      };
+    }
+
+    getContext = getParseContext;
+
+
+    if (proxy) {
+      elementProxy = Object.create({}, {
+        'name': getter(function() {
+          return elementName;
+        }),
+        'originalName': getter(function() {
+          return _elementName;
+        }),
+        'attrs': getter(getAttrs),
+        'ns': getter(function() {
+          return nsMatrix;
+        })
+      });
+    }
+
+    // actual parse logic
+    while (j !== -1) {
+
+      if (xml.charCodeAt(j) === 60) { // "<"
+        i = j;
+      } else {
+        i = xml.indexOf('<', j);
+      }
+
+      // parse end
+      if (i === -1) {
+        if (nodeStack.length) {
+          return handleError('unexpected end of file');
+        }
+
+        if (j === 0) {
+          return handleError('missing start tag');
+        }
+
+        if (j < xml.length) {
+          if (xml.substring(j).trim()) {
+            handleWarning(NON_WHITESPACE_OUTSIDE_ROOT_NODE);
+          }
+        }
+
+        return;
+      }
+
+      // parse text
+      if (j !== i) {
+
+        if (nodeStack.length) {
+          if (onText) {
+            onText(xml.substring(j, i), decodeEntities, getContext);
+
+            if (parseStop) {
+              return;
+            }
+          }
+        } else {
+          if (xml.substring(j, i).trim()) {
+            handleWarning(NON_WHITESPACE_OUTSIDE_ROOT_NODE);
+
+            if (parseStop) {
+              return;
+            }
+          }
+        }
+      }
+
+      w = xml.charCodeAt(i+1);
+
+      // parse comments + CDATA
+      if (w === 33) { // "!"
+        q = xml.charCodeAt(i+2);
+
+        // CDATA section
+        if (q === 91 && xml.substr(i + 3, 6) === 'CDATA[') { // 91 == "["
+          j = xml.indexOf(']]>', i);
+          if (j === -1) {
+            return handleError('unclosed cdata');
+          }
+
+          if (onCDATA) {
+            onCDATA(xml.substring(i + 9, j), getContext);
+            if (parseStop) {
+              return;
+            }
+          }
+
+          j += 3;
+          continue;
+        }
+
+        // comment
+        if (q === 45 && xml.charCodeAt(i + 3) === 45) { // 45 == "-"
+          j = xml.indexOf('-->', i);
+          if (j === -1) {
+            return handleError('unclosed comment');
+          }
+
+
+          if (onComment) {
+            onComment(xml.substring(i + 4, j), decodeEntities, getContext);
+            if (parseStop) {
+              return;
+            }
+          }
+
+          j += 3;
+          continue;
+        }
+      }
+
+      // parse question <? ... ?>
+      if (w === 63) { // "?"
+        j = xml.indexOf('?>', i);
+        if (j === -1) {
+          return handleError('unclosed question');
+        }
+
+        if (onQuestion) {
+          onQuestion(xml.substring(i, j + 2), getContext);
+          if (parseStop) {
+            return;
+          }
+        }
+
+        j += 2;
+        continue;
+      }
+
+      // find matching closing tag for attention or standard tags
+      // for that we must skip through attribute values
+      // (enclosed in single or double quotes)
+      for (x = i + 1; ; x++) {
+        v = xml.charCodeAt(x);
+        if (isNaN(v)) {
+          j = -1;
+          return handleError('unclosed tag');
+        }
+
+        // [10] AttValue ::= '"' ([^<&"] | Reference)* '"' | "'" ([^<&'] | Reference)* "'"
+        // skips the quoted string
+        // (double quotes) does not appear in a literal enclosed by (double quotes)
+        // (single quote) does not appear in a literal enclosed by (single quote)
+        if (v === 34) { //  '"'
+          q = xml.indexOf('"', x + 1);
+          x = q !== -1 ? q : x;
+        } else if (v === 39) { // "'"
+          q = xml.indexOf("'", x + 1);
+          x = q !== -1 ? q : x;
+        } else if (v === 62) { // '>'
+          j = x;
+          break;
+        }
+      }
+
+
+      // parse attention <! ...>
+      // previously comment and CDATA have already been parsed
+      if (w === 33) { // "!"
+
+        if (onAttention) {
+          onAttention(xml.substring(i, j + 1), decodeEntities, getContext);
+          if (parseStop) {
+            return;
+          }
+        }
+
+        j += 1;
+        continue;
+      }
+
+      // don't process attributes;
+      // there are none
+      cachedAttrs = {};
+
+      // if (xml.charCodeAt(i+1) === 47) { // </...
+      if (w === 47) { // </...
+        tagStart = false;
+        tagEnd = true;
+
+        if (!nodeStack.length) {
+          return handleError('missing open tag');
+        }
+
+        // verify open <-> close tag match
+        x = elementName = nodeStack.pop();
+        q = i + 2 + x.length;
+
+        if (xml.substring(i + 2, q) !== x) {
+          return handleError('closing tag mismatch');
+        }
+
+        // verify chars in close tag
+        for (; q < j; q++) {
+          w = xml.charCodeAt(q);
+
+          if (w === 32 || (w > 8 && w < 14)) { // \f\n\r\t\v space
+            continue;
+          }
+
+          return handleError('close tag');
+        }
+
+      } else {
+        if (xml.charCodeAt(j - 1) === 47) { // .../>
+          x = elementName = xml.substring(i + 1, j - 1);
+
+          tagStart = true;
+          tagEnd = true;
+
+        } else {
+          x = elementName = xml.substring(i + 1, j);
+
+          tagStart = true;
+          tagEnd = false;
+        }
+
+        if (!(w > 96 && w < 123 || w > 64 && w < 91 || w === 95 || w === 58)) { // char 95"_" 58":"
+          return handleError('illegal first char nodeName');
+        }
+
+        for (q = 1, y = x.length; q < y; q++) {
+          w = x.charCodeAt(q);
+
+          if (w > 96 && w < 123 || w > 64 && w < 91 || w > 47 && w < 59 || w === 45 || w === 95 || w == 46) {
+            continue;
+          }
+
+          if (w === 32 || (w < 14 && w > 8)) { // \f\n\r\t\v space
+            elementName = x.substring(0, q);
+
+            // maybe there are attributes
+            cachedAttrs = null;
+            break;
+          }
+
+          return handleError('invalid nodeName');
+        }
+
+        if (!tagEnd) {
+          nodeStack.push(elementName);
+        }
+      }
+
+      if (isNamespace) {
+
+        _nsMatrix = nsMatrix;
+
+        if (tagStart) {
+
+          // remember old namespace
+          // unless we're self-closing
+          if (!tagEnd) {
+            nsMatrixStack.push(_nsMatrix);
+          }
+
+          if (cachedAttrs === null) {
+
+            // quick check, whether there may be namespace
+            // declarations on the node; if that is the case
+            // we need to eagerly parse the node attributes
+            if ((maybeNS = x.indexOf('xmlns', q) !== -1)) {
+              attrsStart = q;
+              attrsString = x;
+
+              getAttrs();
+
+              maybeNS = false;
+            }
+          }
+        }
+
+        _elementName = elementName;
+
+        w = elementName.indexOf(':');
+        if (w !== -1) {
+          xmlns = nsMatrix[elementName.substring(0, w)];
+
+          // prefix given; namespace must exist
+          if (!xmlns) {
+            return handleError('missing namespace on <' + _elementName + '>');
+          }
+
+          elementName = elementName.substr(w + 1);
+        } else {
+          xmlns = nsMatrix['xmlns'];
+
+          // if no default namespace is defined,
+          // we'll import the element as anonymous.
+          //
+          // it is up to users to correct that to the document defined
+          // targetNamespace, or whatever their undersanding of the
+          // XML spec mandates.
+        }
+
+        // adjust namespace prefixs as configured
+        if (xmlns) {
+          elementName = xmlns + ':' + elementName;
+        }
+
+      }
+
+      if (tagStart) {
+        attrsStart = q;
+        attrsString = x;
+
+        if (onOpenTag) {
+          if (proxy) {
+            onOpenTag(elementProxy, decodeEntities, tagEnd, getContext);
+          } else {
+            onOpenTag(elementName, getAttrs, decodeEntities, tagEnd, getContext);
+          }
+
+          if (parseStop) {
+            return;
+          }
+        }
+
+      }
+
+      if (tagEnd) {
+
+        if (onCloseTag) {
+          onCloseTag(proxy ? elementProxy : elementName, decodeEntities, tagStart, getContext);
+
+          if (parseStop) {
+            return;
+          }
+        }
+
+        // restore old namespace
+        if (isNamespace) {
+          if (!tagStart) {
+            nsMatrix = nsMatrixStack.pop();
+          } else {
+            nsMatrix = _nsMatrix;
+          }
+        }
+      }
+
+      j += 1;
+    }
+  } /** end parse */
+
+}
+
+
+
 
 /***/ }),
 

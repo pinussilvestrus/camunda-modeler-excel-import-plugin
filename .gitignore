@@ -105,6 +105,7 @@ typings/
 .DS_Store
 *.xlsx
 *.dmn
+!test/fixtures/**
 !example.xlsx
 
 .vscode
