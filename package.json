@@ -1,6 +1,6 @@
 {
   "name": "camunda-modeler-excel-import-plugin",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Camunda Modeler plugin to import Excel Sheets to DMN 1.3 Decision Tables (and export back again).",
   "main": "index.js",
   "repository": {
