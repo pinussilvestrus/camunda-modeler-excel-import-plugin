@@ -10,7 +10,7 @@ import {
 
 import ImportModal from './ImportModal';
 
-import Icon from '../resources/file-excel.svg';
+import OpenIcon from '../resources/file-excel.svg';
 
 import HIT_POLICIES from './helper/hitPolicies';
 
@@ -108,12 +108,12 @@ export default class ExcelPlugin extends PureComponent {
       displayNotification
     } = this.props;
 
-    const message = `${exportedDecisionTables.length} Decision Tables were exported. Find your exported Excel file at <${exportPath }>.`;
-
     displayNotification({
       type: 'success',
       title: 'Export succeeded!',
-      content: message,
+      content: <ExportSuccess
+        exportPath={ exportPath }
+        exportedDecisionTables={ exportedDecisionTables } />,
       duration: 10000
     });
   }
@@ -342,7 +342,7 @@ export default class ExcelPlugin extends PureComponent {
           className="excel-icon"
           onClick={ this.openModal.bind(this) }
         >
-          <Icon />
+          <OpenIcon />
         </button>
       </Fill>
 
@@ -353,7 +353,7 @@ export default class ExcelPlugin extends PureComponent {
             className="excel-icon"
             onClick={ this.export.bind(this) }
           >
-            <Icon />
+            <OpenIcon />
           </button>
         </Fill>
       )}
@@ -369,6 +369,18 @@ export default class ExcelPlugin extends PureComponent {
 
 
 // helpers ////////////////
+
+const ExportSuccess = (props) => {
+  const {
+    exportedDecisionTables,
+    exportPath
+  } = props;
+
+  return <div>
+    <p>{exportedDecisionTables.length + ' Decision Table(s) were exported.'}</p>
+    <p>{'Find your exported Excel file at "' + exportPath + '".'}</p>
+  </div>;
+};
 
 const createImportRequestBody = (details) => {
   return JSON.stringify({

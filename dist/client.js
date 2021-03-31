@@ -302,11 +302,13 @@ class ExcelPlugin extends camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED
     const {
       displayNotification
     } = this.props;
-    const message = `${exportedDecisionTables.length} Decision Tables were exported. Find your exported Excel file at <${exportPath}>.`;
     displayNotification({
       type: 'success',
       title: 'Export succeeded!',
-      content: message,
+      content: /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement(ExportSuccess, {
+        exportPath: exportPath,
+        exportedDecisionTables: exportedDecisionTables
+      }),
       duration: 10000
     });
   }
@@ -527,6 +529,14 @@ class ExcelPlugin extends camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED
   }
 
 } // helpers ////////////////
+
+const ExportSuccess = props => {
+  const {
+    exportedDecisionTables,
+    exportPath
+  } = props;
+  return /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", null, /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement("p", null, exportedDecisionTables.length + ' Decision Table(s) were exported.'), /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement("p", null, 'Find your exported Excel file at "' + exportPath + '".'));
+};
 
 const createImportRequestBody = details => {
   return JSON.stringify({
