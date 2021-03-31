@@ -1,4 +1,4 @@
-exports.inputExpression = (id, text, typeRef = 'string') => {
+export default (id, text, typeRef = 'string') => {
   return {
     id: id,
     text: text,

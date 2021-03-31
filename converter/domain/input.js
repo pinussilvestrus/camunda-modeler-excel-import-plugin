@@ -1,4 +1,4 @@
-exports.input = (id, label, inputExpression) => {
+export default (id, label, inputExpression) => {
   return {
     id: id,
     label: label,

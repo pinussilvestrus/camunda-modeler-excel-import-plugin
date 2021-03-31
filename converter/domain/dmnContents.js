@@ -1,4 +1,4 @@
-exports.dmnContents = (rawContent) => {
+export default (rawContent) => {
   return {
     name: rawContent.name,
     hitPolicy: rawContent.hitPolicy,
