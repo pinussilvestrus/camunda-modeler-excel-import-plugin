@@ -1136,6 +1136,8 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _domain_output__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./domain/output */ "./converter/domain/output.js");
 /* harmony import */ var _domain_rule__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ./domain/rule */ "./converter/domain/rule.js");
 /* harmony import */ var _domain_dmnContents__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ./domain/dmnContents */ "./converter/domain/dmnContents.js");
+/* harmony import */ var _util__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ./util */ "./converter/util/index.js");
+
 
 
 
@@ -1146,22 +1148,22 @@ __webpack_require__.r(__webpack_exports__);
 
 const getInputs = (inputArray, typeRefs) => {
   return inputArray.map((text, index) => {
-    const expression = (0,_domain_inputExpression__WEBPACK_IMPORTED_MODULE_3__.default)(`InputExpression${index}`, text, typeRefs[index]);
-    return (0,_domain_input__WEBPACK_IMPORTED_MODULE_2__.default)(`Input${index}`, text, expression);
+    const expression = (0,_domain_inputExpression__WEBPACK_IMPORTED_MODULE_3__.default)((0,_util__WEBPACK_IMPORTED_MODULE_7__.nextId)('InputExpression_'), text, typeRefs[index]);
+    return (0,_domain_input__WEBPACK_IMPORTED_MODULE_2__.default)((0,_util__WEBPACK_IMPORTED_MODULE_7__.nextId)('Input_'), text, expression);
   });
 };
 
 const getOutputs = (outputArray, typeRefs, amountOutputs) => {
-  return outputArray.map((text, index) => (0,_domain_output__WEBPACK_IMPORTED_MODULE_4__.default)(`Output${index}`, text, text, typeRefs[typeRefs.length - outputArray.length + index]));
+  return outputArray.map((text, index) => (0,_domain_output__WEBPACK_IMPORTED_MODULE_4__.default)((0,_util__WEBPACK_IMPORTED_MODULE_7__.nextId)('Output_'), text, text, typeRefs[typeRefs.length - outputArray.length + index]));
 };
 
 const getRules = (rows, amountOutputs, headerLength) => {
-  return rows.map((row, index) => {
+  return rows.map(row => {
     const ruleData = {
-      id: `Rule${index}`,
+      id: (0,_util__WEBPACK_IMPORTED_MODULE_7__.nextId)('Rule_'),
       description: row[row.length - 1],
-      inputEntries: getEntries(row.slice(0, headerLength - amountOutputs), index, 'InputEntry'),
-      outputEntries: getEntries(row.slice(headerLength - amountOutputs, headerLength), index, 'OutputEntry')
+      inputEntries: getEntries(row.slice(0, headerLength - amountOutputs), 'InputEntry'),
+      outputEntries: getEntries(row.slice(headerLength - amountOutputs, headerLength), 'OutputEntry')
     };
     return (0,_domain_rule__WEBPACK_IMPORTED_MODULE_5__.default)(ruleData.id, ruleData.description, ruleData.inputEntries, ruleData.outputEntries);
   });
@@ -1178,8 +1180,8 @@ const validateRows = rows => {
   return rows;
 };
 
-const getEntries = (row, ruleIndex, rowType) => {
-  return row.map((text, entryIndex) => (0,_domain_entry__WEBPACK_IMPORTED_MODULE_1__.default)(`${rowType}${ruleIndex}${entryIndex}`, text));
+const getEntries = (row, rowType) => {
+  return row.map(text => (0,_domain_entry__WEBPACK_IMPORTED_MODULE_1__.default)((0,_util__WEBPACK_IMPORTED_MODULE_7__.nextId)(`${rowType}_`), text));
 };
 
 const getTypeRefs = row => {
@@ -1276,6 +1278,26 @@ const convertDmnToXlsx = async options => {
     exportedDecisionTables: dmnContent
   };
 };
+
+/***/ }),
+
+/***/ "./converter/util/index.js":
+/*!*********************************!*\
+  !*** ./converter/util/index.js ***!
+  \*********************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "nextId": () => (/* binding */ nextId)
+/* harmony export */ });
+/* harmony import */ var ids__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ids */ "./node_modules/ids/dist/index.esm.js");
+
+function nextId(prefix) {
+  const ids = new ids__WEBPACK_IMPORTED_MODULE_0__.default([32, 32, 1]);
+  return ids.nextPrefixed(prefix);
+}
 
 /***/ }),
 
@@ -5653,6 +5675,186 @@ function simple(additionalPackages, options) {
 }
 
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (simple);
+
+
+/***/ }),
+
+/***/ "./node_modules/ids/dist/index.esm.js":
+/*!********************************************!*\
+  !*** ./node_modules/ids/dist/index.esm.js ***!
+  \********************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+function createCommonjsModule(fn, module) {
+	return module = { exports: {} }, fn(module, module.exports), module.exports;
+}
+
+var hat_1 = createCommonjsModule(function (module) {
+var hat = module.exports = function (bits, base) {
+    if (!base) base = 16;
+    if (bits === undefined) bits = 128;
+    if (bits <= 0) return '0';
+    
+    var digits = Math.log(Math.pow(2, bits)) / Math.log(base);
+    for (var i = 2; digits === Infinity; i *= 2) {
+        digits = Math.log(Math.pow(2, bits / i)) / Math.log(base) * i;
+    }
+    
+    var rem = digits - Math.floor(digits);
+    
+    var res = '';
+    
+    for (var i = 0; i < Math.floor(digits); i++) {
+        var x = Math.floor(Math.random() * base).toString(base);
+        res = x + res;
+    }
+    
+    if (rem) {
+        var b = Math.pow(base, rem);
+        var x = Math.floor(Math.random() * b).toString(base);
+        res = x + res;
+    }
+    
+    var parsed = parseInt(res, base);
+    if (parsed !== Infinity && parsed >= Math.pow(2, bits)) {
+        return hat(bits, base)
+    }
+    else return res;
+};
+
+hat.rack = function (bits, base, expandBy) {
+    var fn = function (data) {
+        var iters = 0;
+        do {
+            if (iters ++ > 10) {
+                if (expandBy) bits += expandBy;
+                else throw new Error('too many ID collisions, use more bits')
+            }
+            
+            var id = hat(bits, base);
+        } while (Object.hasOwnProperty.call(hats, id));
+        
+        hats[id] = data;
+        return id;
+    };
+    var hats = fn.hats = {};
+    
+    fn.get = function (id) {
+        return fn.hats[id];
+    };
+    
+    fn.set = function (id, value) {
+        fn.hats[id] = value;
+        return fn;
+    };
+    
+    fn.bits = bits || 128;
+    fn.base = base || 16;
+    return fn;
+};
+});
+
+/**
+ * Create a new id generator / cache instance.
+ *
+ * You may optionally provide a seed that is used internally.
+ *
+ * @param {Seed} seed
+ */
+
+function Ids(seed) {
+  if (!(this instanceof Ids)) {
+    return new Ids(seed);
+  }
+
+  seed = seed || [128, 36, 1];
+  this._seed = seed.length ? hat_1.rack(seed[0], seed[1], seed[2]) : seed;
+}
+/**
+ * Generate a next id.
+ *
+ * @param {Object} [element] element to bind the id to
+ *
+ * @return {String} id
+ */
+
+Ids.prototype.next = function (element) {
+  return this._seed(element || true);
+};
+/**
+ * Generate a next id with a given prefix.
+ *
+ * @param {Object} [element] element to bind the id to
+ *
+ * @return {String} id
+ */
+
+
+Ids.prototype.nextPrefixed = function (prefix, element) {
+  var id;
+
+  do {
+    id = prefix + this.next(true);
+  } while (this.assigned(id)); // claim {prefix}{random}
+
+
+  this.claim(id, element); // return
+
+  return id;
+};
+/**
+ * Manually claim an existing id.
+ *
+ * @param {String} id
+ * @param {String} [element] element the id is claimed by
+ */
+
+
+Ids.prototype.claim = function (id, element) {
+  this._seed.set(id, element || true);
+};
+/**
+ * Returns true if the given id has already been assigned.
+ *
+ * @param  {String} id
+ * @return {Boolean}
+ */
+
+
+Ids.prototype.assigned = function (id) {
+  return this._seed.get(id) || false;
+};
+/**
+ * Unclaim an id.
+ *
+ * @param  {String} id the id to unclaim
+ */
+
+
+Ids.prototype.unclaim = function (id) {
+  delete this._seed.hats[id];
+};
+/**
+ * Clear all claimed ids.
+ */
+
+
+Ids.prototype.clear = function () {
+  var hats = this._seed.hats,
+      id;
+
+  for (id in hats) {
+    this.unclaim(id);
+  }
+};
+
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (Ids);
+//# sourceMappingURL=index.esm.js.map
 
 
 /***/ }),

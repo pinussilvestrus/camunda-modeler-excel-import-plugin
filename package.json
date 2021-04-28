@@ -21,9 +21,10 @@
     "test": "run-s lint mocha"
   },
   "dependencies": {
+    "dmn-moddle": "^9.1.0",
+    "ids": "^1.0.0",
     "node-xlsx": "^0.16.1",
-    "xmlbuilder": "^15.1.1",
-    "dmn-moddle": "^9.1.0"
+    "xmlbuilder": "^15.1.1"
   },
   "devDependencies": {
     "@babel/core": "^7.13.13",

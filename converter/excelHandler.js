@@ -12,24 +12,28 @@ import rule from './domain/rule';
 
 import dmnContents from './domain/dmnContents';
 
+import {
+  nextId
+} from './util';
+
 
 const getInputs = (inputArray, typeRefs) => {
   return inputArray.map((text, index) => {
-    const expression = inputExpression(`InputExpression${index}`, text, typeRefs[index]);
-    return input(`Input${index}`, text, expression);
+    const expression = inputExpression(nextId('InputExpression_'), text, typeRefs[index]);
+    return input(nextId('Input_'), text, expression);
   });
 };
 
 const getOutputs = (outputArray, typeRefs, amountOutputs) => {
-  return outputArray.map((text, index) => output(`Output${index}`, text, text, typeRefs[typeRefs.length - outputArray.length + index]));
+  return outputArray.map((text, index) => output(nextId('Output_'), text, text, typeRefs[typeRefs.length - outputArray.length + index]));
 };
 
 const getRules = (rows, amountOutputs, headerLength) => {
-  return rows.map((row, index) => {
-    const ruleData = { id: `Rule${index}`,
+  return rows.map((row) => {
+    const ruleData = { id: nextId('Rule_'),
       description: row[row.length -1],
-      inputEntries: getEntries(row.slice(0, headerLength - amountOutputs), index, 'InputEntry'),
-      outputEntries: getEntries(row.slice(headerLength - amountOutputs, headerLength), index, 'OutputEntry')
+      inputEntries: getEntries(row.slice(0, headerLength - amountOutputs), 'InputEntry'),
+      outputEntries: getEntries(row.slice(headerLength - amountOutputs, headerLength), 'OutputEntry')
     };
     return rule(ruleData.id, ruleData.description, ruleData.inputEntries, ruleData.outputEntries);
   });
@@ -46,8 +50,8 @@ const validateRows = (rows) => {
   return rows;
 };
 
-const getEntries = (row, ruleIndex, rowType) => {
-  return row.map((text, entryIndex) => entry(`${rowType}${ruleIndex}${entryIndex}`, text));
+const getEntries = (row, rowType) => {
+  return row.map((text) => entry(nextId(`${rowType}_`), text));
 };
 
 const getTypeRefs = (row) => {
