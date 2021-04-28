@@ -26,9 +26,9 @@ describe('excelHandler', () => {
       expect(dmnContent.name).to.equal(options.tableName);
       expect(dmnContent.hitPolicy).to.be.a('string');
       expect(dmnContent.hitPolicy).to.equal(options.hitPolicy);
-      expect(dmnContent.inputs).to.eql(standardExpectedInputs());
-      expect(dmnContent.outputs).to.eql(standardExpectedOutput());
-      expect(dmnContent.rules).to.eql(standardExpectedRules());
+      expect(dmnContent.inputs).to.have.length(standardExpectedInputs().length);
+      expect(dmnContent.outputs).to.have.length(standardExpectedOutput().length);
+      expect(dmnContent.rules).to.have.length(standardExpectedRules().length);
     });
 
 
@@ -50,9 +50,9 @@ describe('excelHandler', () => {
       expect(dmnContent.hitPolicy).to.equal(options.hitPolicy);
       expect(dmnContent.aggregation).to.be.a('string');
       expect(dmnContent.aggregation).to.equal(options.aggregation);
-      expect(dmnContent.inputs).to.eql(standardExpectedInputs());
-      expect(dmnContent.outputs).to.eql(standardExpectedOutput());
-      expect(dmnContent.rules).to.eql(standardExpectedRules());
+      expect(dmnContent.inputs).to.have.length(standardExpectedInputs().length);
+      expect(dmnContent.outputs).to.have.length(standardExpectedOutput().length);
+      expect(dmnContent.rules).to.have.length(standardExpectedRules().length);
     });
 
 
@@ -74,65 +74,70 @@ describe('excelHandler', () => {
 
       const expectedInputs = [
         {
-          id: 'Input0',
           label: 'amount',
-          inputExpression: { id: 'InputExpression0', text: 'amount', typeRef: 'string' }
+          inputExpression: { text: 'amount', typeRef: 'string' }
         }
       ];
-      expect(dmnContent.inputs).to.eql(expectedInputs);
+      expect(dmnContent.inputs).to.have.length(expectedInputs.length);
+      expect(dmnContent.inputs[0].label).to.eql(expectedInputs[0].label);
+      expect(dmnContent.inputs[0].inputExpression.text).to.eql(expectedInputs[0].inputExpression.text);
+      expect(dmnContent.inputs[0].inputExpression.typeRef).to.eql(expectedInputs[0].inputExpression.typeRef);
 
       const expectedOutputs = [
         {
-          id: 'Output0',
           text: 'invoiceCategory',
           name: 'invoiceCategory',
           typeRef: 'boolean'
         },
         {
-          id: 'Output1',
           text: 'result',
           name: 'result',
           typeRef: 'string'
         }
       ];
-      expect(dmnContent.outputs).to.eql(expectedOutputs);
+      expect(dmnContent.outputs).to.have.length(expectedOutputs.length);
+      expect(dmnContent.outputs[0].text).to.eql(expectedOutputs[0].text);
+      expect(dmnContent.outputs[0].typeRef).to.eql(expectedOutputs[0].typeRef);
 
       const expectedRules = [
         {
-          id: 'Rule0',
           description: 'accounting',
           inputEntries: [
-            { id: 'InputEntry00', text: '<= 500' }
+            { text: '<= 500' }
           ],
           outputEntries: [
-            { id: 'OutputEntry00', text: 'amount < b' },
-            { id: 'OutputEntry01', text: 'accounting' }
+            { text: 'amount < b' },
+            { text: 'accounting' }
           ]
         },
         {
-          id: 'Rule1',
           description: 'anno1',
           inputEntries: [
-            { id: 'InputEntry10', text: '> 800' }
+            { text: '> 800' }
           ],
           outputEntries: [
-            { id: 'OutputEntry10', text: 2 },
-            { id: 'OutputEntry11', text: 'sales' }
+            { text: 2 },
+            { text: 'sales' }
           ]
         },
         {
-          id: 'Rule2',
           description: 'management',
           inputEntries: [
-            { id: 'InputEntry20', text: '> 500' }
+            { text: '> 500' }
           ],
           outputEntries: [
-            { id: 'OutputEntry20', text: 3.56787 },
-            { id: 'OutputEntry21', text: 'management' }
+            { text: 3.56787 },
+            { text: 'management' }
           ]
         }
       ];
-      expect(dmnContent.rules).to.eql(expectedRules);
+
+      expect(dmnContent.rules).to.have.length(expectedRules.length);
+      expect(dmnContent.rules[0].description).to.eql(expectedRules[0].description);
+      expect(dmnContent.rules[0].inputEntries.length).to.eql(expectedRules[0].inputEntries.length);
+      expect(dmnContent.rules[0].inputEntries[0].text).to.eql(expectedRules[0].inputEntries[0].text);
+      expect(dmnContent.rules[0].outputEntries.length).to.eql(expectedRules[0].outputEntries.length);
+      expect(dmnContent.rules[0].outputEntries[0].text).to.eql(expectedRules[0].outputEntries[0].text);
     });
 
   });
