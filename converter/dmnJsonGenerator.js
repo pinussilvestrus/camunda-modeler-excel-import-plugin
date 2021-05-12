@@ -4,26 +4,20 @@ const dmnModdle = new Moddle();
 
 export const buildJsonFromXML = async ({ xml }) => {
 
-  return new Promise((resolve, reject) => {
-    dmnModdle.fromXML(xml, (err, definitions) => {
-      if (err) {
-        reject(err);
-      }
+  const { rootElement: definitions } = await dmnModdle.fromXML(xml);
 
-      const decisionTables = getAllDecisionTables(definitions);
+  const decisionTables = getAllDecisionTables(definitions);
 
-      resolve(decisionTables.map(d => {
-        const decisionLogic = d.get('decisionLogic');
+  return decisionTables.map(d => {
+    const decisionLogic = d.get('decisionLogic');
 
-        return {
-          id: d.id,
-          inputs: decisionLogic.get('input').map(buildParseableInput),
-          outputs: decisionLogic.get('output').map(buildParseableOutput),
-          rules: decisionLogic.get('rule').map(buildParseableRule),
-          name: d.get('name')
-        };
-      }));
-    });
+    return {
+      id: d.id,
+      inputs: decisionLogic.get('input').map(buildParseableInput),
+      outputs: decisionLogic.get('output').map(buildParseableOutput),
+      rules: decisionLogic.get('rule').map(buildParseableRule),
+      name: d.get('name')
+    };
   });
 };
 

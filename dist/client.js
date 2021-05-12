@@ -800,24 +800,19 @@ const dmnModdle = new dmn_moddle__WEBPACK_IMPORTED_MODULE_0__.default();
 const buildJsonFromXML = async ({
   xml
 }) => {
-  return new Promise((resolve, reject) => {
-    dmnModdle.fromXML(xml, (err, definitions) => {
-      if (err) {
-        reject(err);
-      }
-
-      const decisionTables = getAllDecisionTables(definitions);
-      resolve(decisionTables.map(d => {
-        const decisionLogic = d.get('decisionLogic');
-        return {
-          id: d.id,
-          inputs: decisionLogic.get('input').map(buildParseableInput),
-          outputs: decisionLogic.get('output').map(buildParseableOutput),
-          rules: decisionLogic.get('rule').map(buildParseableRule),
-          name: d.get('name')
-        };
-      }));
-    });
+  const {
+    rootElement: definitions
+  } = await dmnModdle.fromXML(xml);
+  const decisionTables = getAllDecisionTables(definitions);
+  return decisionTables.map(d => {
+    const decisionLogic = d.get('decisionLogic');
+    return {
+      id: d.id,
+      inputs: decisionLogic.get('input').map(buildParseableInput),
+      outputs: decisionLogic.get('output').map(buildParseableOutput),
+      rules: decisionLogic.get('rule').map(buildParseableRule),
+      name: d.get('name')
+    };
   });
 }; // helpers ////////////////////
 
@@ -3922,6 +3917,24 @@ function DmnModdle(packages, options) {
 
 DmnModdle.prototype = Object.create(moddle__WEBPACK_IMPORTED_MODULE_0__.Moddle.prototype);
 
+/**
+ * The fromXML result.
+ *
+ * @typedef {Object} ParseResult
+ *
+ * @property {ModdleElement} rootElement
+ * @property {Array<Object>} references
+ * @property {Array<Error>} warnings
+ * @property {Object} elementsById - a mapping containing each ID -> ModdleElement
+ */
+
+/**
+ * The fromXML error.
+ *
+ * @typedef {Error} ParseError
+ *
+ * @property {Array<Error>} warnings
+ */
 
 /**
  * Instantiates a DMN model tree from a given xml string.
@@ -3929,61 +3942,59 @@ DmnModdle.prototype = Object.create(moddle__WEBPACK_IMPORTED_MODULE_0__.Moddle.p
  * @param {String}   xmlStr
  * @param {String}   [typeName='dmn:Definitions'] name of the root element
  * @param {Object}   [options]  options to pass to the underlying reader
- * @param {Function} done       callback that is invoked with (err, result, parseContext)
- *                              once the import completes
+ *
+ * @returns {Promise<ParseResult, ParseError>}
  */
-DmnModdle.prototype.fromXML = function(xmlStr, typeName, options, done) {
+DmnModdle.prototype.fromXML = function(xmlStr, typeName, options) {
 
   if (!(0,min_dash__WEBPACK_IMPORTED_MODULE_1__.isString)(typeName)) {
-    done = options;
     options = typeName;
     typeName = 'dmn:Definitions';
-  }
-
-  if ((0,min_dash__WEBPACK_IMPORTED_MODULE_1__.isFunction)(options)) {
-    done = options;
-    options = {};
   }
 
   var reader = new moddle_xml__WEBPACK_IMPORTED_MODULE_2__.Reader((0,min_dash__WEBPACK_IMPORTED_MODULE_1__.assign)({ model: this, lax: true }, options));
   var rootHandler = reader.handler(typeName);
 
-  reader.fromXML(xmlStr, rootHandler, done);
+  return reader.fromXML(xmlStr, rootHandler);
 };
 
+/**
+ * The toXML result.
+ *
+ * @typedef {Object} SerializationResult
+ *
+ * @property {String} xml
+ */
 
 /**
  * Serializes a DMN object tree to XML.
  *
  * @param {String}   element    the root element, typically an instance of `Definitions`
  * @param {Object}   [options]  to pass to the underlying writer
- * @param {Function} done       callback invoked with (err, xmlStr) once the import completes
+ *
+ * @returns {Promise<SerializationResult, Error>}
  */
-DmnModdle.prototype.toXML = function(element, options, done) {
-
-  if ((0,min_dash__WEBPACK_IMPORTED_MODULE_1__.isFunction)(options)) {
-    done = options;
-    options = {};
-  }
+DmnModdle.prototype.toXML = function(element, options) {
 
   var writer = new moddle_xml__WEBPACK_IMPORTED_MODULE_2__.Writer(options);
 
-  var result;
-  var err;
+  return new Promise(function(resolve, reject) {
+    try {
+      var result = writer.toXML(element);
 
-  try {
-    result = writer.toXML(element);
-  } catch (e) {
-    err = e;
-  }
-
-  return done(err, result);
+      return resolve({
+        xml: result
+      });
+    } catch (err) {
+      return reject(err);
+    }
+  });
 };
 
-var name = "DC";
-var prefix = "dc";
-var uri = "http://www.omg.org/spec/DMN/20180521/DC/";
-var types = [
+var name$4 = "DC";
+var prefix$4 = "dc";
+var uri$4 = "http://www.omg.org/spec/DMN/20180521/DC/";
+var types$4 = [
 	{
 		name: "Dimension",
 		properties: [
@@ -4057,9 +4068,9 @@ var types = [
 		]
 	}
 ];
-var associations = [
+var associations$3 = [
 ];
-var enumerations = [
+var enumerations$3 = [
 	{
 		name: "AlignmentKind",
 		literalValues: [
@@ -4076,22 +4087,26 @@ var enumerations = [
 	}
 ];
 var DcPackage = {
-	name: name,
-	prefix: prefix,
-	uri: uri,
-	types: types,
-	associations: associations,
-	enumerations: enumerations
+	name: name$4,
+	prefix: prefix$4,
+	uri: uri$4,
+	types: types$4,
+	associations: associations$3,
+	enumerations: enumerations$3
 };
 
-var name$1 = "DI";
-var prefix$1 = "di";
-var uri$1 = "http://www.omg.org/spec/DMN/20180521/DI/";
-var types$1 = [
+var name$3 = "DI";
+var prefix$3 = "di";
+var uri$3 = "http://www.omg.org/spec/DMN/20180521/DI/";
+var types$3 = [
 	{
 		name: "DiagramElement",
 		isAbstract: true,
 		properties: [
+			{
+				name: "extension",
+				type: "Extension"
+			},
 			{
 				name: "id",
 				isAttr: true,
@@ -4178,23 +4193,33 @@ var types$1 = [
 				type: "String"
 			}
 		]
+	},
+	{
+		name: "Extension",
+		properties: [
+			{
+				name: "values",
+				isMany: true,
+				type: "Element"
+			}
+		]
 	}
 ];
-var associations$1 = [
+var associations$2 = [
 ];
-var enumerations$1 = [
+var enumerations$2 = [
 ];
-var xml = {
+var xml$2 = {
 	tagAlias: "lowerCase"
 };
 var DiPackage = {
-	name: name$1,
-	prefix: prefix$1,
-	uri: uri$1,
-	types: types$1,
-	associations: associations$1,
-	enumerations: enumerations$1,
-	xml: xml
+	name: name$3,
+	prefix: prefix$3,
+	uri: uri$3,
+	types: types$3,
+	associations: associations$2,
+	enumerations: enumerations$2,
+	xml: xml$2
 };
 
 var name$2 = "DMN";
@@ -5260,7 +5285,7 @@ var types$2 = [
 		]
 	}
 ];
-var enumerations$2 = [
+var enumerations$1 = [
 	{
 		name: "HitPolicy",
 		literalValues: [
@@ -5347,7 +5372,7 @@ var enumerations$2 = [
 		]
 	}
 ];
-var associations$2 = [
+var associations$1 = [
 ];
 var xml$1 = {
 	tagAlias: "lowerCase"
@@ -5357,15 +5382,15 @@ var DmnPackage = {
 	prefix: prefix$2,
 	uri: uri$2,
 	types: types$2,
-	enumerations: enumerations$2,
-	associations: associations$2,
+	enumerations: enumerations$1,
+	associations: associations$1,
 	xml: xml$1
 };
 
-var name$3 = "DMNDI";
-var prefix$3 = "dmndi";
-var uri$3 = "https://www.omg.org/spec/DMN/20191111/DMNDI/";
-var types$3 = [
+var name$1 = "DMNDI";
+var prefix$1 = "dmndi";
+var uri$1 = "https://www.omg.org/spec/DMN/20191111/DMNDI/";
+var types$1 = [
 	{
 		name: "DMNDI",
 		properties: [
@@ -5589,26 +5614,26 @@ var types$3 = [
 		]
 	}
 ];
-var associations$3 = [
+var associations = [
 ];
-var enumerations$3 = [
+var enumerations = [
 ];
 var DmnDiPackage = {
-	name: name$3,
-	prefix: prefix$3,
-	uri: uri$3,
-	types: types$3,
-	associations: associations$3,
-	enumerations: enumerations$3
+	name: name$1,
+	prefix: prefix$1,
+	uri: uri$1,
+	types: types$1,
+	associations: associations,
+	enumerations: enumerations
 };
 
-var name$4 = "bpmn.io DI for DMN";
-var uri$4 = "http://bpmn.io/schema/dmn/biodi/2.0";
-var prefix$4 = "biodi";
-var xml$2 = {
+var name = "bpmn.io DI for DMN";
+var uri = "http://bpmn.io/schema/dmn/biodi/2.0";
+var prefix = "biodi";
+var xml = {
 	tagAlias: "lowerCase"
 };
-var types$4 = [
+var types = [
 	{
 		name: "DecisionTable",
 		isAbstract: true,
@@ -5653,11 +5678,11 @@ var types$4 = [
 	}
 ];
 var BioDiPackage = {
-	name: name$4,
-	uri: uri$4,
-	prefix: prefix$4,
-	xml: xml$2,
-	types: types$4
+	name: name,
+	uri: uri,
+	prefix: prefix,
+	xml: xml,
+	types: types
 };
 
 var packages = {
@@ -5963,41 +5988,43 @@ exports.write = function (buffer, value, offset, isLE, mLen, nBytes) {
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   "flatten": () => (/* binding */ flatten),
+/* harmony export */   "assign": () => (/* binding */ assign),
+/* harmony export */   "bind": () => (/* binding */ bind),
+/* harmony export */   "debounce": () => (/* binding */ debounce),
+/* harmony export */   "ensureArray": () => (/* binding */ ensureArray),
+/* harmony export */   "every": () => (/* binding */ every),
+/* harmony export */   "filter": () => (/* binding */ filter),
 /* harmony export */   "find": () => (/* binding */ find),
 /* harmony export */   "findIndex": () => (/* binding */ findIndex),
-/* harmony export */   "filter": () => (/* binding */ filter),
+/* harmony export */   "flatten": () => (/* binding */ flatten),
 /* harmony export */   "forEach": () => (/* binding */ forEach),
-/* harmony export */   "without": () => (/* binding */ without),
-/* harmony export */   "reduce": () => (/* binding */ reduce),
-/* harmony export */   "every": () => (/* binding */ every),
-/* harmony export */   "some": () => (/* binding */ some),
-/* harmony export */   "map": () => (/* binding */ map),
-/* harmony export */   "keys": () => (/* binding */ keys),
-/* harmony export */   "size": () => (/* binding */ size),
-/* harmony export */   "values": () => (/* binding */ values),
+/* harmony export */   "get": () => (/* binding */ get),
 /* harmony export */   "groupBy": () => (/* binding */ groupBy),
-/* harmony export */   "uniqueBy": () => (/* binding */ uniqueBy),
-/* harmony export */   "unionBy": () => (/* binding */ unionBy),
-/* harmony export */   "sortBy": () => (/* binding */ sortBy),
-/* harmony export */   "matchPattern": () => (/* binding */ matchPattern),
-/* harmony export */   "debounce": () => (/* binding */ debounce),
-/* harmony export */   "throttle": () => (/* binding */ throttle),
-/* harmony export */   "bind": () => (/* binding */ bind),
-/* harmony export */   "isUndefined": () => (/* binding */ isUndefined),
-/* harmony export */   "isDefined": () => (/* binding */ isDefined),
-/* harmony export */   "isNil": () => (/* binding */ isNil),
-/* harmony export */   "isArray": () => (/* binding */ isArray),
-/* harmony export */   "isObject": () => (/* binding */ isObject),
-/* harmony export */   "isNumber": () => (/* binding */ isNumber),
-/* harmony export */   "isFunction": () => (/* binding */ isFunction),
-/* harmony export */   "isString": () => (/* binding */ isString),
-/* harmony export */   "ensureArray": () => (/* binding */ ensureArray),
 /* harmony export */   "has": () => (/* binding */ has),
-/* harmony export */   "assign": () => (/* binding */ assign),
-/* harmony export */   "pick": () => (/* binding */ pick),
+/* harmony export */   "isArray": () => (/* binding */ isArray),
+/* harmony export */   "isDefined": () => (/* binding */ isDefined),
+/* harmony export */   "isFunction": () => (/* binding */ isFunction),
+/* harmony export */   "isNil": () => (/* binding */ isNil),
+/* harmony export */   "isNumber": () => (/* binding */ isNumber),
+/* harmony export */   "isObject": () => (/* binding */ isObject),
+/* harmony export */   "isString": () => (/* binding */ isString),
+/* harmony export */   "isUndefined": () => (/* binding */ isUndefined),
+/* harmony export */   "keys": () => (/* binding */ keys),
+/* harmony export */   "map": () => (/* binding */ map),
+/* harmony export */   "matchPattern": () => (/* binding */ matchPattern),
+/* harmony export */   "merge": () => (/* binding */ merge),
 /* harmony export */   "omit": () => (/* binding */ omit),
-/* harmony export */   "merge": () => (/* binding */ merge)
+/* harmony export */   "pick": () => (/* binding */ pick),
+/* harmony export */   "reduce": () => (/* binding */ reduce),
+/* harmony export */   "set": () => (/* binding */ set),
+/* harmony export */   "size": () => (/* binding */ size),
+/* harmony export */   "some": () => (/* binding */ some),
+/* harmony export */   "sortBy": () => (/* binding */ sortBy),
+/* harmony export */   "throttle": () => (/* binding */ throttle),
+/* harmony export */   "unionBy": () => (/* binding */ unionBy),
+/* harmony export */   "uniqueBy": () => (/* binding */ uniqueBy),
+/* harmony export */   "values": () => (/* binding */ values),
+/* harmony export */   "without": () => (/* binding */ without)
 /* harmony export */ });
 /**
  * Flatten array, one level deep.
@@ -6503,6 +6530,63 @@ function assign(target) {
   return _extends.apply(void 0, [target].concat(others));
 }
 /**
+ * Sets a nested property of a given object to the specified value.
+ *
+ * This mutates the object and returns it.
+ *
+ * @param {Object} target The target of the set operation.
+ * @param {(string|number)[]} path The path to the nested value.
+ * @param {any} value The value to set.
+ */
+
+function set(target, path, value) {
+  var currentTarget = target;
+  forEach(path, function (key, idx) {
+    if (key === '__proto__') {
+      throw new Error('illegal key: __proto__');
+    }
+
+    var nextKey = path[idx + 1];
+    var nextTarget = currentTarget[key];
+
+    if (isDefined(nextKey) && isNil(nextTarget)) {
+      nextTarget = currentTarget[key] = isNaN(+nextKey) ? {} : [];
+    }
+
+    if (isUndefined(nextKey)) {
+      if (isUndefined(value)) {
+        delete currentTarget[key];
+      } else {
+        currentTarget[key] = value;
+      }
+    } else {
+      currentTarget = nextTarget;
+    }
+  });
+  return target;
+}
+/**
+ * Gets a nested property of a given object.
+ *
+ * @param {Object} target The target of the get operation.
+ * @param {(string|number)[]} path The path to the nested value.
+ * @param {any} [defaultValue] The value to return if no value exists.
+ */
+
+function get(target, path, defaultValue) {
+  var currentTarget = target;
+  forEach(path, function (key) {
+    // accessing nil property yields <undefined>
+    if (isNil(currentTarget)) {
+      currentTarget = undefined;
+      return false;
+    }
+
+    currentTarget = currentTarget[key];
+  });
+  return isUndefined(currentTarget) ? defaultValue : currentTarget;
+}
+/**
  * Pick given properties from the target object.
  *
  * @param {Object} target
@@ -6685,9 +6769,6 @@ function getModdleDescriptor(element) {
   return element.$descriptor;
 }
 
-function defer(fn) {
-  setTimeout(fn, 0);
-}
 
 /**
  * A parse context.
@@ -6745,6 +6826,7 @@ function Context(options) {
       id = element.get(idProperty.name);
 
       if (id) {
+
         // for QName validation as per http://www.w3.org/TR/REC-xml/#NT-NameChar
         if (!/^([a-z][\w-.]*:)?[a-z_][\w-.]*$/i.test(id)) {
           throw new Error('illegal ID <' + id + '>');
@@ -6942,6 +7024,7 @@ ElementHandler.prototype.createElement = function(node) {
           id: value
         });
       } else {
+
         // IDREFS: parse references as whitespace-separated list
         values = value.split(' ');
 
@@ -7039,6 +7122,7 @@ ElementHandler.prototype.getPropertyForNode = function(node) {
       });
     }
   } else {
+
     // parse unknown element (maybe extension)
     property = (0,min_dash__WEBPACK_IMPORTED_MODULE_2__.find)(descriptor.properties, function(p) {
       return !p.isReference && !p.isAttribute && p.type === 'Element';
@@ -7114,6 +7198,7 @@ ElementHandler.prototype.handleChild = function(node) {
 
       this.context.addReference(newElement);
     } else {
+
       // establish child -> parent relationship
       newElement.$parent = element;
     }
@@ -7219,28 +7304,50 @@ function Reader(options) {
   (0,min_dash__WEBPACK_IMPORTED_MODULE_2__.assign)(this, { lax: false }, options);
 }
 
+/**
+ * The fromXML result.
+ *
+ * @typedef {Object} ParseResult
+ *
+ * @property {ModdleElement} rootElement
+ * @property {Array<Object>} references
+ * @property {Array<Error>} warnings
+ * @property {Object} elementsById - a mapping containing each ID -> ModdleElement
+ */
+
+/**
+ * The fromXML result.
+ *
+ * @typedef {Error} ParseError
+ *
+ * @property {Array<Error>} warnings
+ */
 
 /**
  * Parse the given XML into a moddle document tree.
  *
  * @param {String} xml
  * @param {ElementHandler|Object} options or rootHandler
- * @param  {Function} done
+ *
+ * @returns {Promise<ParseResult, ParseError>}
  */
 Reader.prototype.fromXML = function(xml, options, done) {
 
   var rootHandler = options.rootHandler;
 
   if (options instanceof ElementHandler) {
+
     // root handler passed via (xml, { rootHandler: ElementHandler }, ...)
     rootHandler = options;
     options = {};
   } else {
     if (typeof options === 'string') {
+
       // rootHandler passed via (xml, 'someString', ...)
       rootHandler = this.handler(options);
       options = {};
     } else if (typeof rootHandler === 'string') {
+
       // rootHandler passed via (xml, { rootHandler: 'someString' }, ...)
       rootHandler = this.handler(rootHandler);
     }
@@ -7302,6 +7409,7 @@ Reader.prototype.fromXML = function(xml, options, done) {
   }
 
   function handleWarning(err, getContext) {
+
     // just like handling errors in <lax=true> mode
     return handleError(err, getContext, true);
   }
@@ -7341,9 +7449,11 @@ Reader.prototype.fromXML = function(xml, options, done) {
         }
 
         if (!reference) {
+
           // remove unresolvable reference
           collection.splice(idx, 1);
         } else {
+
           // add or update reference in collection
           collection[idx] = reference;
         }
@@ -7406,11 +7516,11 @@ Reader.prototype.fromXML = function(xml, options, done) {
   }
 
   function handleText(text, getContext) {
+
     // strip whitespace only nodes, i.e. before
     // <!CDATA[ ... ]> sections and in between tags
-    text = text.trim();
 
-    if (!text) {
+    if (!text.trim()) {
       return;
     }
 
@@ -7457,11 +7567,11 @@ Reader.prototype.fromXML = function(xml, options, done) {
     .on('error', handleError)
     .on('warn', handleWarning);
 
-  // deferred parse XML to make loading really ascnchronous
-  // this ensures the execution environment (node or browser)
-  // is kept responsive and that certain optimization strategies
-  // can kick in
-  defer(function() {
+  // async XML parsing to make sure the execution environment
+  // (node or brower) is kept responsive and that certain optimization
+  // strategies can kick in.
+  return new Promise(function(resolve, reject) {
+
     var err;
 
     try {
@@ -7472,15 +7582,28 @@ Reader.prototype.fromXML = function(xml, options, done) {
       err = e;
     }
 
-    var element = rootHandler.element;
+    var rootElement = rootHandler.element;
 
-    // handle the situation that we could not extract
-    // the desired root element from the document
-    if (!err && !element) {
+    if (!err && !rootElement) {
       err = error('failed to parse document as <' + rootHandler.type.$descriptor.name + '>');
     }
 
-    done(err, err ? undefined : element, context);
+    var warnings = context.warnings;
+    var references = context.references;
+    var elementsById = context.elementsById;
+
+    if (err) {
+      err.warnings = warnings;
+
+      return reject(err);
+    } else {
+      return resolve({
+        rootElement: rootElement,
+        elementsById: elementsById,
+        references: references,
+        warnings: warnings
+      });
+    }
   });
 };
 
@@ -7615,7 +7738,11 @@ function nsName(ns) {
 
 function getNsAttrs(namespaces) {
 
-  return (0,min_dash__WEBPACK_IMPORTED_MODULE_2__.map)(namespaces.getUsed(), function(ns) {
+  return namespaces.getUsed().filter(function(ns) {
+
+    // do not serialize built in <xml> namespace
+    return ns.prefix !== 'xml';
+  }).map(function(ns) {
     var name = 'xmlns' + (ns.prefix ? ':' + ns.prefix : '');
     return { name: name, value: ns.uri };
   });
@@ -7645,7 +7772,7 @@ function getSerializableProperties(element) {
     }
 
     // do not serialize defaults
-    if (!element.hasOwnProperty(name)) {
+    if (!(0,min_dash__WEBPACK_IMPORTED_MODULE_2__.has)(element, name)) {
       return false;
     }
 
@@ -7923,9 +8050,11 @@ ElementSerializer.prototype.parseNsAttribute = function(element, name, value) {
   }
 
   if (model && model.getPackage(value)) {
+
     // register well known namespace
     this.logNamespace(ns, true, true);
   } else {
+
     // log custom namespace directly as used
     var actualNs = this.logNamespaceUsed(ns, true);
 
@@ -8013,6 +8142,7 @@ ElementSerializer.prototype.parseContainments = function(properties) {
         body.push(new ReferenceSerializer(self.addTagName(self.nsPropertyTagName(p))).build(v));
       });
     } else {
+
       // allow serialization via type
       // rather than element name
       var asType = serializeAsType(p),
@@ -8063,7 +8193,7 @@ ElementSerializer.prototype.logNamespace = function(ns, wellknown, local) {
 
   var existing = namespaces.byUri(nsUri);
 
-  if (nsPrefix !== 'xml' && (!existing || local)) {
+  if (!existing || local) {
     namespaces.add(ns, wellknown);
   }
 
@@ -8140,6 +8270,7 @@ ElementSerializer.prototype.parseAttributes = function(properties) {
         (0,min_dash__WEBPACK_IMPORTED_MODULE_2__.forEach)(value, function(v) {
           values.push(v.id);
         });
+
         // IDREFS is a whitespace-separated list of references.
         value = values.join(' ');
       }
@@ -8444,7 +8575,7 @@ var TYPE_CONVERTERS = {
   String: function(s) { return s; },
   Boolean: function(s) { return s === 'true'; },
   Integer: function(s) { return parseInt(s, 10); },
-  Real: function(s) { return parseFloat(s, 10); }
+  Real: function(s) { return parseFloat(s); }
 };
 
 /**
@@ -9182,6 +9313,7 @@ Moddle.prototype.createAny = function(name, nsUri, properties) {
   this.properties.defineDescriptor(element, descriptor);
   this.properties.defineModel(element, this);
   this.properties.define(element, '$parent', { enumerable: false, writable: true });
+  this.properties.define(element, '$instanceOf', { enumerable: false, writable: true });
 
   (0,min_dash__WEBPACK_IMPORTED_MODULE_0__.forEach)(properties, function(a, key) {
     if ((0,min_dash__WEBPACK_IMPORTED_MODULE_0__.isObject)(a) && a.value !== undefined) {
