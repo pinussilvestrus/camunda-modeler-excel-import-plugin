@@ -231,9 +231,8 @@ __webpack_require__.r(__webpack_exports__);
 const defaultState = {
   activeTab: {},
   configOpen: false,
-  amountOutputs: '1',
   inputFile: '',
-  hitPolicy: 'Unique',
+  sheets: [],
   tableName: '',
   // @deprecated
   outputDirectory: '/Users/niklas.kiefer/Desktop/'
@@ -317,7 +316,7 @@ class ExcelPlugin extends camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED
     });
   }
 
-  async handleFileImportSuccess(xml) {
+  async handleFileImportSuccess(xml, isMulti = false) {
     const {
       triggerAction,
       subscribe
@@ -332,6 +331,14 @@ class ExcelPlugin extends camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED
       }); // make tab dirty after import finished
 
       modeler.once('import.done', function () {
+        const drdView = modeler._views.find(({
+          type
+        }) => type === 'drd');
+
+        if (isMulti && drdView) {
+          modeler.open(drdView);
+        }
+
         const commandStack = modeler.getActiveViewer().get('commandStack');
         setTimeout(function () {
           commandStack.registerHandler('excel.foo', NoopHandler);
@@ -374,17 +381,11 @@ class ExcelPlugin extends camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED
   async convertXlsx(options) {
     const {
       buffer,
-      amountOutputs,
-      tableName,
-      hitPolicy,
-      aggregation
+      sheets
     } = options;
     const xml = (0,_converter__WEBPACK_IMPORTED_MODULE_5__.convertXlsxToDmn)({
       buffer,
-      amountOutputs,
-      tableName,
-      hitPolicy,
-      aggregation
+      sheets
     });
     return xml;
   }
@@ -396,32 +397,35 @@ class ExcelPlugin extends camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED
 
     const fileSystem = _getGlobal('fileSystem');
 
-    const {
+    let {
       inputFile,
-      hitPolicy
+      sheets
     } = options;
 
     try {
       // (0) get correct hit policy (and aggregation)
-      const hitPolicyDetails = toHitPolicy(hitPolicy);
-      options = { ...options,
-        ...hitPolicyDetails
-      }; // (1) get excel sheet contents
+      sheets = sheets.map(sheet => {
+        sheet = { ...sheet,
+          ...toHitPolicy(sheet.hitPolicy || 'Unique')
+        };
+        return sheet;
+      }); // (1) get excel sheet contents
 
       const excelSheet = await fileSystem.readFile(inputFile.path, {
         encoding: false
       });
       const {
         contents
-      } = excelSheet; // (2) convert to DMN 1.3
+      } = excelSheet;
+      const isMulti = await isMultiSheet(contents); // (2) convert to DMN 1.3
       // const xml2 = await this.convertXlsxFromApi(options);
 
-      const xml = await this.convertXlsx({
+      const xml = await this.convertXlsx({ ...options,
         buffer: contents,
-        ...options
+        sheets
       }); // (3) open and save generated DMN 1.3 file
 
-      return await this.handleFileImportSuccess(xml);
+      return await this.handleFileImportSuccess(xml, isMulti);
     } catch (error) {
       this.handleImportError(error);
     }
@@ -443,6 +447,25 @@ class ExcelPlugin extends camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED
     this.setState({
       modalOpen: true
     });
+  }
+
+  async getSheets(file) {
+    const {
+      _getGlobal
+    } = this.props;
+
+    const fileSystem = _getGlobal('fileSystem');
+
+    const excelSheet = await fileSystem.readFile(file.path, {
+      encoding: false
+    });
+    const {
+      contents
+    } = excelSheet;
+    const dmnContents = await (0,_converter__WEBPACK_IMPORTED_MODULE_5__.parseDmn)({
+      buffer: contents
+    });
+    return dmnContents;
   }
 
   async export() {
@@ -527,6 +550,7 @@ class ExcelPlugin extends camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED
       className: "excel-icon",
       onClick: this.export.bind(this)
     }, /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_resources_file_excel_svg__WEBPACK_IMPORTED_MODULE_3__.default, null))), this.state.modalOpen && /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_ImportModal__WEBPACK_IMPORTED_MODULE_2__.default, {
+      getSheets: this.getSheets.bind(this),
       onClose: this.handleConfigClosed.bind(this),
       initValues: initValues
     }));
@@ -569,6 +593,13 @@ const isDMN = tab => {
   return tab.type === 'dmn';
 };
 
+const isMultiSheet = async contents => {
+  const dmnContents = await (0,_converter__WEBPACK_IMPORTED_MODULE_5__.parseDmn)({
+    buffer: contents
+  });
+  return dmnContents && dmnContents.length > 1;
+};
+
 /***/ }),
 
 /***/ "./client/ImportModal.js":
@@ -606,30 +637,59 @@ const Footer = camunda_modeler_plugin_helpers_components__WEBPACK_IMPORTED_MODUL
 
 const path = __webpack_require__(/*! path */ "./node_modules/path-browserify/index.js");
 
-function ImportModal({
-  initValues,
-  onClose
-}) {
+function ImportModal(props) {
+  const {
+    initValues,
+    getSheets,
+    onClose
+  } = props;
   const [inputFile, setInputFile] = (0,camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0__.useState)(initValues.inputFile);
-  const [amountOutputs, setAmountOutputs] = (0,camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0__.useState)(initValues.amountOutputs);
-  const [tableName, setTableName] = (0,camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0__.useState)(initValues.tableName);
-  const [hitPolicy, setHitPolicy] = (0,camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0__.useState)(initValues.hitPolicy);
   const [chosenFileText, setChosenFileText] = (0,camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0__.useState)('No file selected.');
+  const [rawSheets, setRawSheets] = (0,camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0__.useState)([]);
+  const [sheets, setSheets] = (0,camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0__.useState)([]); // set defaults
 
-  const isValid = () => {
-    return !!amountOutputs && !!inputFile && !!tableName && !!hitPolicy;
+  (0,camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(() => {
+    const sheets = rawSheets.map(() => {
+      return {
+        amountOutputs: 1,
+        hitPolicy: 'Unique'
+      };
+    });
+    setSheets(sheets);
+  }, [rawSheets]);
+
+  const getSheet = (idx, property) => {
+    const sheet = Object.assign({}, sheets[idx]);
+
+    if (sheet && property) {
+      return sheet[property];
+    }
+
+    return sheet || {};
   };
 
-  const handleInputFileChange = event => {
+  const updateSheet = (idx, property, value) => {
+    let updatedSheet = getSheet(idx);
+    updatedSheet[property] = value;
+    const updated = Array.from(sheets);
+    updated[idx] = updatedSheet;
+    setSheets(updated);
+  };
+
+  const isValid = () => {
+    return !!inputFile;
+  };
+
+  const handleInputFileChange = async event => {
     const file = event.target.files[0];
 
     if (!file) {
       return;
     }
 
-    setTableName(getFileNameWithoutExtension(file));
     setInputFile(file);
     setChosenFileText(file.name);
+    setRawSheets(await getSheets(file));
   };
 
   const handleInputFileClick = event => {
@@ -638,10 +698,8 @@ function ImportModal({
   };
 
   const handleSubmit = () => onClose({
-    amountOutputs,
     inputFile,
-    tableName,
-    hitPolicy
+    sheets
   });
 
   const handleDrop = (files = []) => {
@@ -681,36 +739,38 @@ function ImportModal({
     className: "form-control",
     name: "inputFile",
     onChange: handleInputFileChange
-  })))), /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement("fieldset", null, /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement("legend", null, "Decision Table Details"), /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
-    className: "fields"
-  }, /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
-    className: "form-group"
-  }, /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement("label", null, "Name"), /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement("input", {
-    type: "text",
-    id: "tableName",
-    className: "form-control",
-    name: "tableName",
-    placeholder: "The file name is defaults to the excel sheet name.",
-    value: tableName,
-    onChange: event => setTableName(event.target.value)
-  })), /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
-    className: "form-group"
-  }, /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement("label", null, "Amount output columns"), /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement("input", {
-    type: "number",
-    id: "amountOutputs",
-    className: "form-control",
-    name: "amountOutputs",
-    value: amountOutputs,
-    onChange: event => setAmountOutputs(event.target.value)
-  })), /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
-    className: "form-group"
-  }, /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement("label", null, "Hit Policy"), /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement("select", {
-    id: "hitPolicy",
-    className: "form-control",
-    name: "hitPolicy",
-    value: hitPolicy,
-    onChange: event => setHitPolicy(event.target.value)
-  }, /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement("option", null, "Unique"), /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement("option", null, "First"), /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement("option", null, "Priority"), /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement("option", null, "Any"), /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement("option", null, "Collect"), /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement("option", null, "Collect (Sum)"), /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement("option", null, "Collect (Min)"), /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement("option", null, "Collect (Max)"), /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement("option", null, "Collect (Count)"), /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement("option", null, "Rule order"), /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement("option", null, "Output order"))))))), /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement(Footer, null, /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+  })))), rawSheets.map(function (rawSheet, idx) {
+    return /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement("fieldset", null, /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement("legend", null, "Decision Table Details - ", rawSheet.name, " "), /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+      className: "fields"
+    }, /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+      className: "form-group"
+    }, /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement("label", null, "Name"), /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement("input", {
+      type: "text",
+      id: 'tableName-' + idx,
+      className: "form-control",
+      name: 'tableName-' + idx,
+      placeholder: "The file name is defaults to the excel sheet name.",
+      value: getSheet(idx, 'tableName'),
+      onChange: event => updateSheet(idx, 'tableName', event.target.value)
+    })), /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+      className: "form-group"
+    }, /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement("label", null, "Amount output columns"), /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement("input", {
+      type: "number",
+      id: 'amountOutputs-' + idx,
+      className: "form-control",
+      name: 'amountOutputs-' + idx,
+      value: getSheet(idx, 'amountOutputs'),
+      onChange: event => updateSheet(idx, 'amountOutputs', event.target.value)
+    })), /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+      className: "form-group"
+    }, /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement("label", null, "Hit Policy"), /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement("select", {
+      id: 'hitPolicy-' + idx,
+      className: "form-control",
+      name: 'hitPolicy-' + idx,
+      value: getSheet(idx, 'hitPolicy'),
+      onChange: event => updateSheet(idx, 'hitPolicy', event.target.value)
+    }, /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement("option", null, "Unique"), /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement("option", null, "First"), /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement("option", null, "Priority"), /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement("option", null, "Any"), /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement("option", null, "Collect"), /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement("option", null, "Collect (Sum)"), /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement("option", null, "Collect (Min)"), /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement("option", null, "Collect (Max)"), /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement("option", null, "Collect (Count)"), /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement("option", null, "Rule order"), /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement("option", null, "Output order")))));
+  }))), /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement(Footer, null, /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
     className: "import-buttons"
   }, /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement("button", {
     type: "submit",
@@ -730,6 +790,10 @@ const getFileNameWithoutExtension = file => {
 
 const getDirectory = file => {
   return path.dirname(file.path) + '/';
+};
+
+const times = (n, fn) => {
+  return [...Array(n)].map(fn);
 };
 
 /***/ }),
@@ -881,16 +945,68 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ });
 /* harmony import */ var xmlbuilder__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! xmlbuilder */ "./node_modules/xmlbuilder/lib/index.js");
 /* harmony import */ var xmlbuilder__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(xmlbuilder__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _util__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./util */ "./converter/util/index.js");
+
 
 const xmlns = 'https://www.omg.org/spec/DMN/20191111/MODEL/';
 const xmlnsDmndi = 'https://www.omg.org/spec/DMN/20191111/DMNDI/';
 const xmlnsDc = 'http://www.omg.org/spec/DMN/20180521/DC/';
 const id = 'AutoGeneratedDmn';
 const name = 'DRD';
-const namespace = 'http://camunda.org/schema/1.0/dmn';
+const namespace = 'http://camunda.org/schema/1.0/dmn'; // API //////////////////////////
 
-const generateBaseNodes = decisionName => {
-  let xml = xmlbuilder__WEBPACK_IMPORTED_MODULE_0___default().create({
+/**
+ * @param {Array} dmnContents
+ * @returns {String}
+ */
+
+const buildXmlFromDmnContent = dmnContents => {
+  let base = generateBaseNodes();
+  dmnContents.forEach(sheet => {
+    const {
+      name,
+      rules,
+      inputs,
+      outputs,
+      hitPolicy,
+      aggregation
+    } = sheet; // (1) generate decision table contents
+
+    const ruleNodes = generateRuleNodes(rules);
+    const inputNodes = generateInputNodes(inputs);
+    const outputNodes = generateOutputNodes(outputs);
+    const decisionTable = {
+      '@id': (0,_util__WEBPACK_IMPORTED_MODULE_1__.nextId)('DecisionTable_'),
+      input: inputNodes,
+      output: outputNodes,
+      rule: ruleNodes
+    };
+
+    if (hitPolicy !== 'UNIQUE') {
+      decisionTable['@hitPolicy'] = hitPolicy;
+
+      if (aggregation) {
+        decisionTable['@aggregation'] = aggregation;
+      }
+    } // (2) add to definitions
+
+
+    const decision = {
+      '@id': (0,_util__WEBPACK_IMPORTED_MODULE_1__.nextId)('Decision_'),
+      '@name': name,
+      decisionTable
+    };
+    base.ele({
+      decision
+    });
+  });
+  return base.end({
+    pretty: true
+  });
+}; // helper ///////////////////
+
+const generateBaseNodes = () => {
+  return xmlbuilder__WEBPACK_IMPORTED_MODULE_0___default().create({
     'definitions': {
       '@xmlns': xmlns,
       '@xmlns:dmndi': xmlnsDmndi,
@@ -899,16 +1015,10 @@ const generateBaseNodes = decisionName => {
       '@name': name,
       '@namespace': namespace
     }
-  }).ele({
-    decision: {
-      '@id': 'AutoGeneratedDecision',
-      '@name': decisionName
-    }
   });
-  return xml;
 };
 
-const generateRuleNodes = rules => {
+const generateRuleNodes = (rules = []) => {
   return rules.map(rule => {
     const inputEntries = rule.inputEntries.map(entry => {
       return {
@@ -931,7 +1041,7 @@ const generateRuleNodes = rules => {
   });
 };
 
-const generateInputNodes = inputs => {
+const generateInputNodes = (inputs = []) => {
   return inputs.map(input => {
     return {
       '@id': input.id,
@@ -945,7 +1055,7 @@ const generateInputNodes = inputs => {
   });
 };
 
-const generateOutputNodes = outputs => {
+const generateOutputNodes = (outputs = []) => {
   return outputs.map(output => {
     return {
       '@id': output.id,
@@ -953,34 +1063,6 @@ const generateOutputNodes = outputs => {
       '@name': output.name,
       '@typeRef': output.typeRef
     };
-  });
-}; // API //////////////////////////
-
-
-const buildXmlFromDmnContent = dmnContents => {
-  var builder = generateBaseNodes(dmnContents.name);
-  const ruleNodes = generateRuleNodes(dmnContents.rules);
-  const inputNodes = generateInputNodes(dmnContents.inputs);
-  const outputNodes = generateOutputNodes(dmnContents.outputs);
-  const decisionTable = {
-    '@id': 'AutoGeneratedDecTable',
-    input: inputNodes,
-    output: outputNodes,
-    rule: ruleNodes
-  };
-
-  if (dmnContents.hitPolicy !== 'UNIQUE') {
-    decisionTable['@hitPolicy'] = dmnContents.hitPolicy;
-
-    if (dmnContents.aggregation) {
-      decisionTable['@aggregation'] = dmnContents.aggregation;
-    }
-  }
-
-  return builder.ele({
-    'decisionTable': decisionTable
-  }).end({
-    pretty: true
   });
 };
 
@@ -1143,20 +1225,65 @@ __webpack_require__.r(__webpack_exports__);
 
 
 
+ // API //////////////////////////////
 
+const parseDmnContent = ({
+  buffer,
+  sheets: sheetsOptions = []
+}) => {
+  const excelSheet = node_xlsx__WEBPACK_IMPORTED_MODULE_0__.default.parse(buffer, {
+    type: 'buffer'
+  });
+  return excelSheet.map((sheet, idx) => {
+    const header = sheet.data[0];
+    const sheetOptions = sheetsOptions[idx] || {};
+    let {
+      aggregation,
+      amountOutputs,
+      tableName,
+      hitPolicy
+    } = sheetOptions;
+    const rawInputData = header.slice(0, header.length - amountOutputs);
+    const rawOutputData = header.slice(header.length - amountOutputs);
+    const safeRuleRows = validateRows(sheet.data.slice(1));
+    const typeRefs = getTypeRefs(safeRuleRows[0]);
 
-const getInputs = (inputArray, typeRefs) => {
+    if (!tableName) {
+      tableName = sheet.name;
+    }
+
+    return (0,_domain_dmnContents__WEBPACK_IMPORTED_MODULE_6__.default)({
+      name: tableName,
+      hitPolicy,
+      aggregation,
+      inputs: getInputs(rawInputData, typeRefs),
+      outputs: getOutputs(rawOutputData, typeRefs),
+      rules: getRules(safeRuleRows, amountOutputs, header.length)
+    });
+  });
+};
+const buildXlsx = (decisionTables = []) => {
+  const dataSheets = decisionTables.map(decisionTable => {
+    return {
+      name: decisionTable.name,
+      data: [[...decisionTable.inputs, ...decisionTable.outputs], ...decisionTable.rules]
+    };
+  });
+  return node_xlsx__WEBPACK_IMPORTED_MODULE_0__.default.build(dataSheets);
+}; // helper /////////////////
+
+const getInputs = (inputArray = [], typeRefs) => {
   return inputArray.map((text, index) => {
     const expression = (0,_domain_inputExpression__WEBPACK_IMPORTED_MODULE_3__.default)((0,_util__WEBPACK_IMPORTED_MODULE_7__.nextId)('InputExpression_'), text, typeRefs[index]);
     return (0,_domain_input__WEBPACK_IMPORTED_MODULE_2__.default)((0,_util__WEBPACK_IMPORTED_MODULE_7__.nextId)('Input_'), text, expression);
   });
 };
 
-const getOutputs = (outputArray, typeRefs, amountOutputs) => {
+const getOutputs = (outputArray = [], typeRefs, amountOutputs) => {
   return outputArray.map((text, index) => (0,_domain_output__WEBPACK_IMPORTED_MODULE_4__.default)((0,_util__WEBPACK_IMPORTED_MODULE_7__.nextId)('Output_'), text, text, typeRefs[typeRefs.length - outputArray.length + index]));
 };
 
-const getRules = (rows, amountOutputs, headerLength) => {
+const getRules = (rows = [], amountOutputs, headerLength) => {
   return rows.map(row => {
     const ruleData = {
       id: (0,_util__WEBPACK_IMPORTED_MODULE_7__.nextId)('Rule_'),
@@ -1168,7 +1295,7 @@ const getRules = (rows, amountOutputs, headerLength) => {
   });
 };
 
-const validateRows = rows => {
+const validateRows = (rows = []) => {
   rows.forEach(element => {
     for (var i = 0; i < element.length; i++) {
       if (element[i] == undefined) {
@@ -1179,11 +1306,11 @@ const validateRows = rows => {
   return rows;
 };
 
-const getEntries = (row, rowType) => {
+const getEntries = (row = [], rowType) => {
   return row.map(text => (0,_domain_entry__WEBPACK_IMPORTED_MODULE_1__.default)((0,_util__WEBPACK_IMPORTED_MODULE_7__.nextId)(`${rowType}_`), text));
 };
 
-const getTypeRefs = row => {
+const getTypeRefs = (row = []) => {
   return row.map(text => {
     if (!text) {
       return 'string';
@@ -1203,46 +1330,6 @@ const getTypeRefs = row => {
 
     return 'string';
   });
-}; // API //////////////////////////////
-
-
-const parseDmnContent = ({
-  buffer,
-  tableName,
-  amountOutputs = 1,
-  hitPolicy = 'UNQIUE',
-  aggregation
-}) => {
-  const excelSheet = node_xlsx__WEBPACK_IMPORTED_MODULE_0__.default.parse(buffer, {
-    type: 'buffer'
-  });
-  const header = excelSheet[0].data[0];
-  const rawInputData = header.slice(0, header.length - amountOutputs);
-  const rawOutputData = header.slice(header.length - amountOutputs);
-  const safeRuleRows = validateRows(excelSheet[0].data.slice(1));
-  const typeRefs = getTypeRefs(safeRuleRows[0]);
-
-  if (!tableName) {
-    tableName = excelSheet[0].name;
-  }
-
-  return (0,_domain_dmnContents__WEBPACK_IMPORTED_MODULE_6__.default)({
-    name: tableName,
-    hitPolicy: hitPolicy,
-    aggregation: aggregation,
-    inputs: getInputs(rawInputData, typeRefs),
-    outputs: getOutputs(rawOutputData, typeRefs),
-    rules: getRules(safeRuleRows, amountOutputs, header.length)
-  });
-};
-const buildXlsx = decisionTables => {
-  const dataSheets = decisionTables.map(decisionTable => {
-    return {
-      name: decisionTable.name,
-      data: [[...decisionTable.inputs, ...decisionTable.outputs], ...decisionTable.rules]
-    };
-  });
-  return node_xlsx__WEBPACK_IMPORTED_MODULE_0__.default.build(dataSheets);
 };
 
 /***/ }),
@@ -1256,6 +1343,7 @@ const buildXlsx = decisionTables => {
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "parseDmn": () => (/* binding */ parseDmn),
 /* harmony export */   "convertXlsxToDmn": () => (/* binding */ convertXlsxToDmn),
 /* harmony export */   "convertDmnToXlsx": () => (/* binding */ convertDmnToXlsx)
 /* harmony export */ });
@@ -1265,6 +1353,9 @@ __webpack_require__.r(__webpack_exports__);
 
 
 
+const parseDmn = options => {
+  return (0,_excelHandler__WEBPACK_IMPORTED_MODULE_0__.parseDmnContent)(options);
+};
 const convertXlsxToDmn = options => {
   const dmnContent = (0,_excelHandler__WEBPACK_IMPORTED_MODULE_0__.parseDmnContent)(options);
   return (0,_dmnXmlGenerator__WEBPACK_IMPORTED_MODULE_1__.buildXmlFromDmnContent)(dmnContent);
