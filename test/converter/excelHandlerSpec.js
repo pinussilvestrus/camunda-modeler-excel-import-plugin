@@ -7,11 +7,12 @@ const parseDmnContent = require('../../converter/excelHandler').parseDmnContent,
       buildXlsx = require('../../converter/excelHandler').buildXlsx;
 
 const buffer = fs.readFileSync(__dirname + '/../fixtures/example.xlsx');
+const bufferMultiple = fs.readFileSync(__dirname + '/../fixtures/example-multiple.xlsx');
 
 
 describe('excelHandler', () => {
 
-  describe('#getDmnContent(buffer, tableName, amountOutputs, hitPolicy, aggregation)', () => {
+  describe('#getDmnContent', () => {
 
     it('should return processed dmn content as json', () => {
 
@@ -19,16 +20,51 @@ describe('excelHandler', () => {
       const options = createOptions();
 
       // when
-      const dmnContent = parseDmnContent(options);
+      const dmnContents = parseDmnContent(options);
 
       // then
+      expect(dmnContents).to.have.length(1);
+
+      const dmnContent = dmnContents[0];
+
       expect(dmnContent.name).to.be.a('string');
-      expect(dmnContent.name).to.equal(options.tableName);
+      expect(dmnContent.name).to.equal(options.sheets[0].tableName);
       expect(dmnContent.hitPolicy).to.be.a('string');
-      expect(dmnContent.hitPolicy).to.equal(options.hitPolicy);
+      expect(dmnContent.hitPolicy).to.equal(options.sheets[0].hitPolicy);
       expect(dmnContent.inputs).to.have.length(standardExpectedInputs().length);
       expect(dmnContent.outputs).to.have.length(standardExpectedOutput().length);
       expect(dmnContent.rules).to.have.length(standardExpectedRules().length);
+    });
+
+
+    it('should return processed dmn content as json - multiple', () => {
+
+      // given
+      const sheets = [
+        {
+          tableName: 'foo',
+          amountOutputs: 1,
+          hitPolicy: 'UNIQUE',
+          aggregation: undefined,
+        },
+        {
+          tableName: 'bar',
+          amountOutputs: 2,
+          hitPolicy: 'UNIQUE',
+          aggregation: undefined,
+        }
+      ];
+
+      const options = createOptions({
+        buffer: bufferMultiple,
+        sheets
+      });
+
+      // when
+      const dmnContents = parseDmnContent(options);
+
+      // then
+      expect(dmnContents).to.have.length(2);
     });
 
 
@@ -36,20 +72,26 @@ describe('excelHandler', () => {
 
       // given
       const options = createOptions({
-        hitPolicy: 'COLLECT',
-        aggregation: 'SUM'
+        sheet: {
+          hitPolicy: 'COLLECT',
+          aggregation: 'SUM'
+        }
       });
 
       // when
-      const dmnContent = parseDmnContent(options);
+      const dmnContents = parseDmnContent(options);
 
       // then
+      expect(dmnContents).to.have.length(1);
+
+      const dmnContent = dmnContents[0];
+
       expect(dmnContent.name).to.be.a('string');
-      expect(dmnContent.name).to.equal(options.tableName);
+      expect(dmnContent.name).to.equal(options.sheets[0].tableName);
       expect(dmnContent.hitPolicy).to.be.a('string');
-      expect(dmnContent.hitPolicy).to.equal(options.hitPolicy);
+      expect(dmnContent.hitPolicy).to.equal(options.sheets[0].hitPolicy);
       expect(dmnContent.aggregation).to.be.a('string');
-      expect(dmnContent.aggregation).to.equal(options.aggregation);
+      expect(dmnContent.aggregation).to.equal(options.sheets[0].aggregation);
       expect(dmnContent.inputs).to.have.length(standardExpectedInputs().length);
       expect(dmnContent.outputs).to.have.length(standardExpectedOutput().length);
       expect(dmnContent.rules).to.have.length(standardExpectedRules().length);
@@ -60,17 +102,23 @@ describe('excelHandler', () => {
 
       // given
       const options = createOptions({
-        amountOutputs: 2
+        sheet: {
+          amountOutputs: 2
+        }
       });
 
       // when
-      const dmnContent = parseDmnContent(options);
+      const dmnContents = parseDmnContent(options);
 
       // then
+      expect(dmnContents).to.have.length(1);
+
+      const dmnContent = dmnContents[0];
+
       expect(dmnContent.name).to.be.a('string');
-      expect(dmnContent.name).to.equal(options.tableName);
+      expect(dmnContent.name).to.equal(options.sheets[0].tableName);
       expect(dmnContent.hitPolicy).to.be.a('string');
-      expect(dmnContent.hitPolicy).to.equal(options.hitPolicy);
+      expect(dmnContent.hitPolicy).to.equal(options.sheets[0].hitPolicy);
 
       const expectedInputs = [
         {
@@ -143,7 +191,7 @@ describe('excelHandler', () => {
   });
 
 
-  describe('#buildXlsx(decisionTables)', () => {
+  describe('#buildXlsx', () => {
 
     it('should create excel file buffer', () => {
 
@@ -163,13 +211,18 @@ describe('excelHandler', () => {
 
 // helpers ///////////////////////
 
-const createOptions = (overrides) => {
+const createOptions = (overrides = {}) => {
   return {
     buffer: buffer,
-    tableName: 'myTableName',
-    amountOutputs: 1,
-    hitPolicy: 'UNIQUE',
-    aggregation: undefined,
+    sheets: [
+      {
+        tableName: 'myTableName',
+        amountOutputs: 1,
+        hitPolicy: 'UNIQUE',
+        aggregation: undefined,
+        ...overrides.sheet
+      }
+    ],
     ...overrides
   };
 };

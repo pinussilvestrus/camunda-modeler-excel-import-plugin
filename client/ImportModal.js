@@ -1,5 +1,5 @@
 /* eslint-disable no-unused-vars */
-import React, { useState } from 'camunda-modeler-plugin-helpers/react';
+import React, { useEffect, useState } from 'camunda-modeler-plugin-helpers/react';
 import { Modal } from 'camunda-modeler-plugin-helpers/components';
 
 // polyfill upcoming structural components
@@ -11,33 +11,67 @@ import Dropzone from './Dropzone';
 
 const path = require('path');
 
-export default function ImportModal({ initValues, onClose }) {
+export default function ImportModal(props) {
+  const {
+    initValues,
+    getSheets,
+    onClose
+  } = props;
 
   const [ inputFile, setInputFile ] = useState(initValues.inputFile);
 
-  const [ amountOutputs, setAmountOutputs ] = useState(initValues.amountOutputs);
-  const [ tableName, setTableName ] = useState(initValues.tableName);
-  const [ hitPolicy, setHitPolicy ] = useState(initValues.hitPolicy);
-
   const [ chosenFileText, setChosenFileText ] = useState('No file selected.');
 
-  const isValid = () => {
-    return !!amountOutputs &&
-      !!inputFile &&
-      !!tableName &&
-      !!hitPolicy;
+  const [ rawSheets, setRawSheets ] = useState([]);
+  const [ sheets, setSheets ] = useState([]);
+
+  // set defaults
+  useEffect(() => {
+    const sheets = rawSheets.map(() => {
+      return {
+        amountOutputs: 1,
+        hitPolicy: 'Unique'
+      };
+    });
+
+    setSheets(sheets);
+  }, [ rawSheets ]);
+
+  const getSheet = (idx, property) => {
+    const sheet = Object.assign({}, sheets[idx]);
+
+    if (sheet && property) {
+      return sheet[property];
+    }
+
+    return sheet || {};
+  };
+  const updateSheet = (idx, property, value) => {
+    let updatedSheet = getSheet(idx);
+
+    updatedSheet[property] = value;
+
+    const updated = Array.from(sheets);
+    updated[idx] = updatedSheet;
+
+    setSheets(updated);
   };
 
-  const handleInputFileChange = (event) => {
+
+  const isValid = () => {
+    return !!inputFile;
+  };
+
+  const handleInputFileChange = async (event) => {
     const file = event.target.files[0];
 
     if (!file) {
       return;
     }
 
-    setTableName(getFileNameWithoutExtension(file));
     setInputFile(file);
     setChosenFileText(file.name);
+    setRawSheets(await getSheets(file));
   };
 
   const handleInputFileClick = (event) => {
@@ -46,10 +80,8 @@ export default function ImportModal({ initValues, onClose }) {
   };
 
   const handleSubmit = () => onClose({
-    amountOutputs,
     inputFile,
-    tableName,
-    hitPolicy
+    sheets
   });
 
   const handleDrop = (files = []) => {
@@ -95,60 +127,66 @@ export default function ImportModal({ initValues, onClose }) {
 
           </fieldset>
 
-          <fieldset>
+          {
+            rawSheets.map(function(rawSheet, idx) {
+              return (
+                <fieldset>
 
-            <legend>Decision Table Details</legend>
+                  <legend>Decision Table Details - { rawSheet.name } </legend>
 
-            <div className="fields">
+                  <div className="fields">
 
-              <div className="form-group">
-                <label>Name</label>
-                <input
-                  type="text"
-                  id="tableName"
-                  className="form-control"
-                  name="tableName"
-                  placeholder="The file name is defaults to the excel sheet name."
-                  value={ tableName }
-                  onChange={ event => setTableName(event.target.value) } />
-              </div>
+                    <div className="form-group">
+                      <label>Name</label>
+                      <input
+                        type="text"
+                        id={ 'tableName-' + idx }
+                        className="form-control"
+                        name={ 'tableName-' + idx }
+                        placeholder="The file name is defaults to the excel sheet name."
+                        value={ getSheet(idx, 'tableName') }
+                        onChange={ event => updateSheet(idx, 'tableName', event.target.value) } />
+                    </div>
 
-              <div className="form-group">
-                <label>Amount output columns</label>
-                <input
-                  type="number"
-                  id="amountOutputs"
-                  className="form-control"
-                  name="amountOutputs"
-                  value={ amountOutputs }
-                  onChange={ event => setAmountOutputs(event.target.value) }
-                />
-              </div>
+                    <div className="form-group">
+                      <label>Amount output columns</label>
+                      <input
+                        type="number"
+                        id={ 'amountOutputs-' + idx }
+                        className="form-control"
+                        name={ 'amountOutputs-' + idx }
+                        value={ getSheet(idx, 'amountOutputs') }
+                        onChange={ event => updateSheet(idx, 'amountOutputs', event.target.value) }
+                      />
+                    </div>
 
-              <div className="form-group">
-                <label>Hit Policy</label>
-                <select
-                  id="hitPolicy"
-                  className="form-control"
-                  name="hitPolicy"
-                  value={ hitPolicy }
-                  onChange={ event => setHitPolicy(event.target.value) }>
-                  <option>Unique</option>
-                  <option>First</option>
-                  <option>Priority</option>
-                  <option>Any</option>
-                  <option>Collect</option>
-                  <option>Collect (Sum)</option>
-                  <option>Collect (Min)</option>
-                  <option>Collect (Max)</option>
-                  <option>Collect (Count)</option>
-                  <option>Rule order</option>
-                  <option>Output order</option>
-                </select>
-              </div>
+                    <div className="form-group">
+                      <label>Hit Policy</label>
+                      <select
+                        id={ 'hitPolicy-' + idx }
+                        className="form-control"
+                        name={ 'hitPolicy-' + idx }
+                        value={ getSheet(idx, 'hitPolicy') }
+                        onChange={ event => updateSheet(idx, 'hitPolicy', event.target.value) }>
+                        <option>Unique</option>
+                        <option>First</option>
+                        <option>Priority</option>
+                        <option>Any</option>
+                        <option>Collect</option>
+                        <option>Collect (Sum)</option>
+                        <option>Collect (Min)</option>
+                        <option>Collect (Max)</option>
+                        <option>Collect (Count)</option>
+                        <option>Rule order</option>
+                        <option>Output order</option>
+                      </select>
+                    </div>
 
-            </div>
-          </fieldset>
+                  </div>
+                </fieldset>
+              );
+            })
+          }
         </form>
       </Body>
 
@@ -178,4 +216,8 @@ const getFileNameWithoutExtension = (file) => {
 
 const getDirectory = (file) => {
   return path.dirname(file.path) + '/';
+};
+
+const times = (n, fn) => {
+  return [...Array(n)].map(fn);
 };

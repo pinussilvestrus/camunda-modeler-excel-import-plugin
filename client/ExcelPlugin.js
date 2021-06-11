@@ -16,15 +16,15 @@ import HIT_POLICIES from './helper/hitPolicies';
 
 import {
   convertXlsxToDmn,
-  convertDmnToXlsx
+  convertDmnToXlsx,
+  parseDmn
 } from '../converter';
 
 const defaultState = {
   activeTab: {},
   configOpen: false,
-  amountOutputs: '1',
   inputFile: '',
-  hitPolicy: 'Unique',
+  sheets: [],
   tableName: '',
 
   // @deprecated
@@ -118,7 +118,7 @@ export default class ExcelPlugin extends PureComponent {
     });
   }
 
-  async handleFileImportSuccess(xml) {
+  async handleFileImportSuccess(xml, isMulti = false) {
     const {
       triggerAction,
       subscribe
@@ -136,6 +136,12 @@ export default class ExcelPlugin extends PureComponent {
 
       // make tab dirty after import finished
       modeler.once('import.done', function() {
+        const drdView = modeler._views.find(({ type }) => type === 'drd');
+
+        if (isMulti && drdView) {
+          modeler.open(drdView);
+        }
+
         const commandStack = modeler.getActiveViewer().get('commandStack');
 
         setTimeout(function() {
@@ -181,18 +187,12 @@ export default class ExcelPlugin extends PureComponent {
   async convertXlsx(options) {
     const {
       buffer,
-      amountOutputs,
-      tableName,
-      hitPolicy,
-      aggregation
+      sheets
     } = options;
 
     const xml = convertXlsxToDmn({
       buffer,
-      amountOutputs,
-      tableName,
-      hitPolicy,
-      aggregation
+      sheets
     });
 
     return xml;
@@ -205,20 +205,22 @@ export default class ExcelPlugin extends PureComponent {
 
     const fileSystem = _getGlobal('fileSystem');
 
-    const {
+    let {
       inputFile,
-      hitPolicy
+      sheets
     } = options;
 
     try {
 
       // (0) get correct hit policy (and aggregation)
-      const hitPolicyDetails = toHitPolicy(hitPolicy);
+      sheets = sheets.map(sheet => {
+        sheet = {
+          ...sheet,
+          ...toHitPolicy(sheet.hitPolicy || 'Unique')
+        };
 
-      options = {
-        ...options,
-        ...hitPolicyDetails
-      };
+        return sheet;
+      });
 
       // (1) get excel sheet contents
       const excelSheet = await fileSystem.readFile(inputFile.path, {
@@ -229,15 +231,18 @@ export default class ExcelPlugin extends PureComponent {
         contents
       } = excelSheet;
 
+      const isMulti = await isMultiSheet(contents);
+
       // (2) convert to DMN 1.3
       // const xml2 = await this.convertXlsxFromApi(options);
       const xml = await this.convertXlsx({
+        ...options,
         buffer: contents,
-        ...options
+        sheets
       });
 
       // (3) open and save generated DMN 1.3 file
-      return await this.handleFileImportSuccess(xml);
+      return await this.handleFileImportSuccess(xml, isMulti);
 
     } catch (error) {
       this.handleImportError(error);
@@ -256,6 +261,26 @@ export default class ExcelPlugin extends PureComponent {
 
   openModal() {
     this.setState({ modalOpen: true });
+  }
+
+  async getSheets(file) {
+    const {
+      _getGlobal
+    } = this.props;
+
+    const fileSystem = _getGlobal('fileSystem');
+
+    const excelSheet = await fileSystem.readFile(file.path, {
+      encoding: false
+    });
+
+    const {
+      contents
+    } = excelSheet;
+
+    const dmnContents = await parseDmn({ buffer: contents });
+
+    return dmnContents;
   }
 
   async export() {
@@ -359,6 +384,7 @@ export default class ExcelPlugin extends PureComponent {
       )}
       { this.state.modalOpen && (
         <ImportModal
+          getSheets={ this.getSheets.bind(this) }
           onClose={ this.handleConfigClosed.bind(this) }
           initValues={ initValues }
         />
@@ -412,4 +438,10 @@ const NoopHandler = function() {
 
 const isDMN = (tab) => {
   return tab.type === 'dmn';
+};
+
+const isMultiSheet = async (contents) => {
+  const dmnContents = await parseDmn({ buffer: contents });
+
+  return dmnContents && dmnContents.length > 1;
 };

@@ -11,8 +11,13 @@ import {
   buildJsonFromXML
 } from './dmnJsonGenerator';
 
+export const parseDmn = (options) => {
+  return parseDmnContent(options);
+};
+
 export const convertXlsxToDmn = (options) => {
   const dmnContent = parseDmnContent(options);
+
   return buildXmlFromDmnContent(dmnContent);
 };
 

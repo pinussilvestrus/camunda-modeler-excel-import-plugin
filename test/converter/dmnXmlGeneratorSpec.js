@@ -2,6 +2,7 @@ const chai = require('chai');
 
 const expect = chai.expect;
 chai.should();
+chai.use(require('chai-string'));
 
 const buildXmlFromDmnContent = require('../../converter/dmnXmlGenerator').buildXmlFromDmnContent;
 
@@ -38,11 +39,37 @@ describe('dmnXmlGenerator', () => {
     });
 
 
+    it('should return valid xml - multiple sheets', () => {
+
+      // given
+      const sheets = [
+        ...createDmnContents(),
+        ...createDmnContents(),
+        ...createDmnContents()
+      ];
+
+      // when
+      const dmnXml = buildXmlFromDmnContent(sheets);
+
+      // then
+      expect(dmnXml).to.have.entriesCount('<decision id=', 3);
+
+      dmnModdle.fromXML(dmnXml, (err, definitions) => {
+        if (err) {
+          expect.fail(err);
+        }
+      });
+
+    });
+
+
     it('should return valid xml with hit policy first', () => {
 
       // given
       const dmnContents = createDmnContents({
-        hitPolicy: 'FIRST'
+        sheet: {
+          hitPolicy: 'FIRST'
+        }
       });
 
       // when
@@ -71,8 +98,10 @@ describe('dmnXmlGenerator', () => {
 
       // given
       const dmnContents = createDmnContents({
-        hitPolicy: 'COLLECT',
-        aggregation: 'SUM'
+        sheet: {
+          hitPolicy: 'COLLECT',
+          aggregation: 'SUM'
+        }
       });
 
       // when
@@ -101,8 +130,13 @@ describe('dmnXmlGenerator', () => {
 
 // helper /////////////////////
 
-const createDmnContents = (overrides) => {
-  const dmnContents = {
+const createDmnContents = (overrides = {}) => {
+  const {
+    sheet,
+    sheets = []
+  } = overrides;
+
+  const newSheet = {
     name: 'myTableName',
     hitPolicy: 'UNIQUE',
     inputs: [
@@ -149,12 +183,10 @@ const createDmnContents = (overrides) => {
         ],
         outputEntries: [ { id: 'OutputEntry20', text: 'management' } ]
       }
-    ]
+    ],
+    ...sheet
   };
 
-  return {
-    ...dmnContents,
-    ...overrides
-  };
+  return [ newSheet, ...sheets ];
 };
 
