@@ -7,6 +7,12 @@
     "type": "git",
     "url": "https://github.com/pinussilvestrus/camunda-modeler-excel-import-plugin.git"
   },
+  "files": [
+    "dist",
+    "client/style.css",
+    "menu.js",
+    "index.js"
+  ],
   "author": "Niklas Kiefer <niklas.kiefer@camunda.com (https://github.com/pinussilvestrus)>",
   "license": "MIT",
   "contributors": [
