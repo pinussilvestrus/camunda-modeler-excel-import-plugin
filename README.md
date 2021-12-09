@@ -39,7 +39,11 @@ $ npm run all
 
 ## Compatibility Notice
 
-This plug-in is currently only compatible with Camunda Modeler `v4.3+`.
+This plugin is currently only compatible with following Camunda Modeler versions.
+
+| Camunda Modeler | Excel Plugin |
+|---|---|
+| 4.3 or newer |  1.0 or newer  |
 
 ## Contributors
 
