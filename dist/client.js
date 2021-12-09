@@ -43956,7 +43956,7 @@ return utils;
 })(utils);
 
 if(has_buf && "function" != 'undefined') (function() {
-	var Readable = __webpack_require__(/*! stream */ "?20df").Readable;
+	var Readable = (__webpack_require__(/*! stream */ "?20df").Readable);
 
 	var write_csv_stream = function(sheet, opts) {
 		var stream = Readable();
