@@ -219,9 +219,11 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var camunda_modeler_plugin_helpers_components__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! camunda-modeler-plugin-helpers/components */ "./node_modules/camunda-modeler-plugin-helpers/components.js");
 /* harmony import */ var _ImportModal__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./ImportModal */ "./client/ImportModal.js");
 /* harmony import */ var _resources_file_excel_svg__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../resources/file-excel.svg */ "./resources/file-excel.svg");
-/* harmony import */ var _helper_hitPolicies__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./helper/hitPolicies */ "./client/helper/hitPolicies.js");
-/* harmony import */ var _converter__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ../converter */ "./converter/index.js");
+/* harmony import */ var _resources_file_excel_export_svg__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ../resources/file-excel-export.svg */ "./resources/file-excel-export.svg");
+/* harmony import */ var _helper_hitPolicies__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ./helper/hitPolicies */ "./client/helper/hitPolicies.js");
+/* harmony import */ var _converter__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ../converter */ "./converter/index.js");
 /* eslint-disable no-unused-vars*/
+
 
 
 
@@ -383,7 +385,7 @@ class ExcelPlugin extends camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED
       buffer,
       sheets
     } = options;
-    const xml = (0,_converter__WEBPACK_IMPORTED_MODULE_5__.convertXlsxToDmn)({
+    const xml = (0,_converter__WEBPACK_IMPORTED_MODULE_6__.convertXlsxToDmn)({
       buffer,
       sheets
     });
@@ -462,7 +464,7 @@ class ExcelPlugin extends camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED
     const {
       contents
     } = excelSheet;
-    const dmnContents = await (0,_converter__WEBPACK_IMPORTED_MODULE_5__.parseDmn)({
+    const dmnContents = await (0,_converter__WEBPACK_IMPORTED_MODULE_6__.parseDmn)({
       buffer: contents
     });
     return dmnContents;
@@ -503,7 +505,7 @@ class ExcelPlugin extends camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED
       const {
         contents,
         exportedDecisionTables
-      } = await (0,_converter__WEBPACK_IMPORTED_MODULE_5__.convertDmnToXlsx)({
+      } = await (0,_converter__WEBPACK_IMPORTED_MODULE_6__.convertDmnToXlsx)({
         xml: file.contents
       }); // (3) save file on disk
 
@@ -536,20 +538,20 @@ class ExcelPlugin extends camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED
       hitPolicy
     };
     return /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement(camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement(camunda_modeler_plugin_helpers_components__WEBPACK_IMPORTED_MODULE_1__.Fill, {
-      slot: "toolbar",
-      group: "1_general"
+      slot: "status-bar__file",
+      group: "xx_excel"
     }, /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement("button", {
       title: "Open excel sheet",
-      className: "excel-icon",
+      className: "btn",
       onClick: this.openModal.bind(this)
     }, /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_resources_file_excel_svg__WEBPACK_IMPORTED_MODULE_3__["default"], null))), isDMN(activeTab) && /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement(camunda_modeler_plugin_helpers_components__WEBPACK_IMPORTED_MODULE_1__.Fill, {
-      slot: "toolbar",
-      group: "4_export"
+      slot: "status-bar__file",
+      group: "xx_excel"
     }, /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement("button", {
       title: "Export as excel sheet",
-      className: "excel-icon",
+      className: "btn",
       onClick: this.export.bind(this)
-    }, /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_resources_file_excel_svg__WEBPACK_IMPORTED_MODULE_3__["default"], null))), this.state.modalOpen && /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_ImportModal__WEBPACK_IMPORTED_MODULE_2__["default"], {
+    }, /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_resources_file_excel_export_svg__WEBPACK_IMPORTED_MODULE_4__["default"], null))), this.state.modalOpen && /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_ImportModal__WEBPACK_IMPORTED_MODULE_2__["default"], {
       getSheets: this.getSheets.bind(this),
       onClose: this.handleConfigClosed.bind(this),
       initValues: initValues
@@ -580,7 +582,7 @@ const createOutputPath = details => {
 };
 
 const toHitPolicy = rawValue => {
-  return _helper_hitPolicies__WEBPACK_IMPORTED_MODULE_4__["default"][rawValue];
+  return _helper_hitPolicies__WEBPACK_IMPORTED_MODULE_5__["default"][rawValue];
 };
 
 const NoopHandler = function () {
@@ -594,7 +596,7 @@ const isDMN = tab => {
 };
 
 const isMultiSheet = async contents => {
-  const dmnContents = await (0,_converter__WEBPACK_IMPORTED_MODULE_5__.parseDmn)({
+  const dmnContents = await (0,_converter__WEBPACK_IMPORTED_MODULE_6__.parseDmn)({
     buffer: contents
   });
   return dmnContents && dmnContents.length > 1;
@@ -10301,6 +10303,52 @@ module.exports = posix;
 
 /***/ }),
 
+/***/ "./resources/file-excel-export.svg":
+/*!*****************************************!*\
+  !*** ./resources/file-excel-export.svg ***!
+  \*****************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! react */ "./node_modules/camunda-modeler-plugin-helpers/react.js");
+/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(react__WEBPACK_IMPORTED_MODULE_0__);
+function _extends() { _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; }; return _extends.apply(this, arguments); }
+
+
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (({
+  styles = {},
+  ...props
+}) => /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("svg", _extends({
+  width: "17",
+  height: "16",
+  fill: "none",
+  xmlns: "http://www.w3.org/2000/svg"
+}, props), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("path", {
+  d: "M14.513 2.3H8.188v11.4h6.325c.217 0 .392-.18.392-.4V2.7a.396.396 0 00-.392-.4z",
+  fill: "#fff"
+}), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("path", {
+  d: "M9.067 15.2l-8.37-1.598V2.398L9.067.801v14.398z",
+  fill: "#5D9874"
+}), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("path", {
+  d: "M5.904 10.8l-.935-1.823a1.638 1.638 0 01-.114-.375H4.84c-.03.136-.072.27-.126.398l-.942 1.8h-1.46L4.045 8 2.46 5.2h1.49l.78 1.679c.068.152.125.309.163.473h.015c.03-.11.088-.274.171-.489L5.946 5.2h1.36L5.68 7.977 7.36 10.8H5.904z",
+  fill: "#fff"
+}), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("path", {
+  d: "M13.833 5.8h-2.92V4.399h2.92v1.403zm-2.725-.198h2.531v-1h-2.531v1zm-.776.199H9.116v-.2h1.019v-1H9.116v-.203h1.216v1.403zm3.501 2h-2.92V6.398h2.92v1.403zm-2.725-.2h2.531v-1h-2.531v1zm2.725 2.2h-2.92V8.398h2.92v1.403zm-2.725-.2h2.531v-1h-2.531v1zm-.776-1.8H9.116v-.2h1.019v-1H9.116v-.203h1.216v1.403zm0 2H9.116v-.2h1.019v-1H9.116v-.203h1.216v1.403zm3.501 2h-2.92v-1.403h2.92v1.403zm-2.725-.2h2.531v-1h-2.531v1zm-.776.2H9.116v-.2h1.019v-1H9.116v-.203h1.216v1.403z",
+  fill: "#E0E9F0"
+}), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("path", {
+  d: "M7.364 11H5.908a.092.092 0 01-.088-.055L4.882 9.02c-.004 0-.004 0-.004-.004l-.034-.082c-.012.035-.023.07-.038.105l-.932 1.906a.092.092 0 01-.087.055H2.323a.094.094 0 01-.083-.05c-.02-.032-.015-.071 0-.102l1.695-2.852-1.562-2.848a.11.11 0 010-.097A.1.1 0 012.46 5h1.49c.038 0 .072.023.091.059l.776 1.777c.034.07.06.14.087.215.027-.07.054-.145.084-.227l.87-1.77A.096.096 0 015.946 5h1.36a.1.1 0 01.088.05.11.11 0 010 .098l-1.6 2.829 1.653 2.87a.097.097 0 010 .102.099.099 0 01-.083.051zm-1.395-.2h1.224L5.596 8.028a.119.119 0 010-.101L7.14 5.199H6.007l-.84 1.707a5.29 5.29 0 00-.164.473.102.102 0 01-.095.07c-.045 0-.099-.031-.11-.074a2.647 2.647 0 00-.156-.453L3.89 5.199H2.624l1.509 2.75a.107.107 0 01-.004.102l-1.63 2.75h1.227l.905-1.848c.045-.117.083-.246.114-.375A.098.098 0 014.84 8.5c.05 0 .106.035.114.082.019.121.053.238.102.352L5.97 10.8zm8.544 3H9.067v-.198h5.446a.297.297 0 00.293-.301V2.699c0-.164-.13-.3-.293-.3H8.968v-.2h5.545c.27 0 .487.227.487.5v10.602c0 .273-.217.5-.487.5z",
+  fill: "#3C5D49"
+}), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("path", {
+  d: "M9.162 15.32l-8.56-1.636V2.316L9.162.68v14.64zM.795 13.516l8.173 1.562V.922L.795 2.484v11.032zM16.354 8.354a.5.5 0 000-.708l-3.182-3.182a.5.5 0 10-.708.708L15.293 8l-2.829 2.828a.5.5 0 10.708.708l3.182-3.182zM10 8.5h6v-1h-6v1z",
+  fill: "#3C5D49"
+})));
+
+/***/ }),
+
 /***/ "./resources/file-excel.svg":
 /*!**********************************!*\
   !*** ./resources/file-excel.svg ***!
@@ -10321,28 +10369,28 @@ function _extends() { _extends = Object.assign || function (target) { for (var i
   styles = {},
   ...props
 }) => /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("svg", _extends({
-  xmlns: "http://www.w3.org/2000/svg",
-  width: "16pt",
-  height: "16pt",
-  viewBox: "0 0 16 16"
+  width: "16",
+  height: "16",
+  fill: "none",
+  xmlns: "http://www.w3.org/2000/svg"
 }, props), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("path", {
-  d: "M14.898 2.3h-6.5v11.4h6.5c.223 0 .403-.18.403-.4V2.7a.401.401 0 00-.403-.4zm0 0",
+  d: "M14.898 2.3h-6.5v11.4h6.5c.223 0 .403-.18.403-.4V2.7a.401.401 0 00-.403-.4z",
   fill: "#fff"
 }), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("path", {
-  d: "M9.3 15.2L.7 13.601V2.398L9.3.801zm0 0",
-  fill: "#5d9874"
+  d: "M9.3 15.2L.7 13.601V2.398L9.3.801v14.398z",
+  fill: "#5D9874"
 }), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("path", {
-  d: "M6.05 10.8l-.96-1.823a1.606 1.606 0 01-.117-.375h-.016A2.37 2.37 0 014.828 9l-.969 1.8h-1.5L4.141 8 2.51 5.2h1.532l.8 1.679c.071.152.13.309.169.473h.015c.032-.11.09-.274.176-.489l.89-1.664h1.4L5.82 7.977 7.547 10.8zm0 0",
+  d: "M6.05 10.8l-.96-1.823a1.606 1.606 0 01-.117-.375h-.016A2.37 2.37 0 014.828 9l-.969 1.8h-1.5L4.141 8 2.51 5.2h1.532l.8 1.679c.071.152.13.309.169.473h.015c.032-.11.09-.274.176-.489l.89-1.664h1.4L5.82 7.977 7.547 10.8H6.05z",
   fill: "#fff"
 }), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("path", {
-  d: "M14.2 5.8h-3V4.399h3zm-2.802-.198H14v-1h-2.602zm-.796.199h-1.25v-.2h1.046v-1H9.352v-.203h1.25zm3.597 2h-3V6.398h3zm-2.8-.2H14v-1h-2.602zm2.8 2.2h-3V8.398h3zm-2.8-.2H14v-1h-2.602zm-.797-1.8h-1.25v-.2h1.046v-1H9.352v-.203h1.25zm0 2h-1.25v-.2h1.046v-1H9.352v-.203h1.25zm3.597 2h-3v-1.403h3zm-2.8-.2H14v-1h-2.602zm-.797.2h-1.25v-.2h1.046v-1H9.352v-.203h1.25zm0 0",
-  fill: "#e0e9f0"
+  d: "M14.2 5.8h-3V4.399h3v1.403zm-2.802-.198H14v-1h-2.602v1zm-.796.199h-1.25v-.2h1.046v-1H9.352v-.203h1.25v1.403zm3.597 2h-3V6.398h3v1.403zm-2.8-.2H14v-1h-2.602v1zm2.8 2.2h-3V8.398h3v1.403zm-2.8-.2H14v-1h-2.602v1zm-.797-1.8h-1.25v-.2h1.046v-1H9.352v-.203h1.25v1.403zm0 2h-1.25v-.2h1.046v-1H9.352v-.203h1.25v1.403zm3.597 2h-3v-1.403h3v1.403zm-2.8-.2H14v-1h-2.602v1zm-.797.2h-1.25v-.2h1.046v-1H9.352v-.203h1.25v1.403z",
+  fill: "#E0E9F0"
 }), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("path", {
-  d: "M7.55 11H6.056a.095.095 0 01-.09-.055L5 9.02c-.004 0-.004 0-.004-.004l-.035-.082c-.012.035-.024.07-.04.105l-.956 1.906a.095.095 0 01-.09.055H2.371a.097.097 0 01-.086-.05c-.02-.032-.015-.071 0-.102l1.742-2.852-1.605-2.848a.108.108 0 010-.097c.02-.031.05-.051.09-.051h1.531c.039 0 .074.023.094.059l.797 1.777c.035.07.062.14.09.215l.085-.227.895-1.77A.1.1 0 016.094 5h1.398c.04 0 .07.02.09.05a.108.108 0 010 .098L5.938 7.977l1.699 2.87c.02.032.02.071 0 .102A.102.102 0 017.55 11zm-1.433-.2h1.258l-1.64-2.773a.116.116 0 010-.101L7.32 5.199H6.156l-.863 1.707c-.098.246-.145.39-.168.473a.104.104 0 01-.098.07c-.047 0-.101-.031-.113-.074a2.599 2.599 0 00-.16-.453L3.98 5.199h-1.3l1.55 2.75a.104.104 0 01-.003.102L2.55 10.8h1.261l.93-1.848c.047-.117.086-.246.117-.375a.1.1 0 01.098-.078c.05 0 .11.035.117.082.02.121.055.238.106.352zm8.781 3H9.301v-.198h5.597a.3.3 0 00.301-.301V2.699a.3.3 0 00-.3-.3h-5.7v-.2h5.7c.277 0 .5.227.5.5v10.602c0 .273-.223.5-.5.5zm0 0",
-  fill: "#3c5d49"
+  d: "M7.55 11H6.056a.095.095 0 01-.09-.055L5 9.02c-.004 0-.004 0-.004-.004l-.035-.082a1.15 1.15 0 01-.04.105l-.956 1.906a.095.095 0 01-.09.055H2.371a.097.097 0 01-.086-.05c-.02-.032-.015-.071 0-.102l1.742-2.852-1.605-2.848a.108.108 0 010-.097c.02-.031.05-.051.09-.051h1.531c.039 0 .074.023.094.059l.797 1.777c.035.07.062.14.09.215l.085-.227.895-1.77A.1.1 0 016.094 5h1.398c.04 0 .07.02.09.05a.107.107 0 010 .098L5.937 7.977l1.7 2.87c.02.032.02.071 0 .102A.102.102 0 017.55 11zm-1.433-.2h1.258l-1.64-2.773a.116.116 0 010-.101L7.32 5.199H6.156l-.863 1.707c-.098.246-.145.39-.168.473a.104.104 0 01-.098.07c-.047 0-.101-.031-.113-.074a2.6 2.6 0 00-.16-.453L3.98 5.199h-1.3l1.55 2.75a.104.104 0 01-.003.102L2.55 10.8h1.261l.93-1.848c.047-.117.086-.246.117-.375a.1.1 0 01.098-.078c.05 0 .11.035.117.082.02.121.055.238.106.352l.937 1.867zm8.781 3H9.301v-.198h5.597c.168 0 .301-.137.301-.301V2.699a.3.3 0 00-.3-.3h-5.7v-.2h5.7a.5.5 0 01.5.5v10.602c0 .273-.223.5-.5.5z",
+  fill: "#3C5D49"
 }), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("path", {
-  d: "M9.398 15.32L.602 13.684V2.316L9.398.68zM.801 13.516l8.398 1.562V.922L.801 2.484zm0 0",
-  fill: "#3c5d49"
+  d: "M9.398 15.32L.602 13.684V2.316L9.398.68v14.64zM.801 13.516l8.398 1.562V.922L.801 2.484v11.032z",
+  fill: "#3C5D49"
 })));
 
 /***/ }),

@@ -63,31 +63,6 @@
   justify-content: flex-end;
 }
 
-.excel-icon {
-  box-sizing: border-box;
-  border-radius: 3px;
-  padding: 5px;
-  border: solid 1px transparent;
-  background: transparent;
-  vertical-align: middle;
-  font-size: 14px;
-  outline: none;
-  color: var(--color-444444);
-}
-
-.excel-icon:hover {
-  background: #f8f8f8;
-  border: solid 1px #cccccc;
-}
-
-.excel-icon svg {
-  width: 1.3em;
-  line-height: 1em;
-  display: inline-block;
-  text-align: center;
-  padding-top: 3px;
-}
-
 .plugin-dropzone {
   height: 100%;
   width: 100%;

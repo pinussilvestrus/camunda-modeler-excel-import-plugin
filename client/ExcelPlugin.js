@@ -11,6 +11,7 @@ import {
 import ImportModal from './ImportModal';
 
 import OpenIcon from '../resources/file-excel.svg';
+import ExportIcon from '../resources/file-excel-export.svg';
 
 import HIT_POLICIES from './helper/hitPolicies';
 
@@ -361,10 +362,10 @@ export default class ExcelPlugin extends PureComponent {
     };
 
     return <Fragment>
-      <Fill slot="toolbar" group="1_general">
+      <Fill slot="status-bar__file" group="xx_excel">
         <button
           title="Open excel sheet"
-          className="excel-icon"
+          className="btn"
           onClick={ this.openModal.bind(this) }
         >
           <OpenIcon />
@@ -372,13 +373,13 @@ export default class ExcelPlugin extends PureComponent {
       </Fill>
 
       { isDMN(activeTab) && (
-        <Fill slot="toolbar" group="4_export">
+        <Fill slot="status-bar__file" group="xx_excel">
           <button
             title="Export as excel sheet"
-            className="excel-icon"
+            className="btn"
             onClick={ this.export.bind(this) }
           >
-            <OpenIcon />
+            <ExportIcon />
           </button>
         </Fill>
       )}
