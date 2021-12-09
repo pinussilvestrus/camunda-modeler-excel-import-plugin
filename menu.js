@@ -2,7 +2,7 @@ module.exports = function(electronApp, menuState) {
   return [
     {
       label: 'Open excel sheet',
-      accelerator: 'CommandOrControl+e',
+      accelerator: 'CommandOrControl+Alt+E',
       enabled: function() {
         return true;
       },
