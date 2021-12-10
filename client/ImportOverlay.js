@@ -115,82 +115,91 @@ export default function ImportOverlay(props) {
     </Section>
 
     { rawSheets.length ? (
-      <Section maxHeight="400px">
-        <Section.Body>
-          <form id="import-form" className="import-form" onSubmit={ handleSubmit }>
-            {
-              rawSheets.map(function(rawSheet, idx) {
-                return (
-                  <fieldset key={ idx }>
+      <React.Fragment>
+        <Section maxHeight="400px">
+          <Section.Body>
+            <form id="import-form" className="import-form" onSubmit={ handleSubmit }>
+              {
+                rawSheets.map(function(rawSheet, idx) {
+                  return (
+                    <Section key={ idx }>
 
-                    <Section.Header>
-                      Decision Table Details - { rawSheet.name }
-                    </Section.Header>
+                      <Section.Header>
+                        Decision Table Details - { rawSheet.name }
+                      </Section.Header>
 
-                    <div className="fields">
+                      <Section.Body>
+                        <fieldset>
+                          <div className="fields">
 
-                      <div className="form-group">
-                        <label>Name</label>
-                        <input
-                          type="text"
-                          id={ 'tableName-' + idx }
-                          className="form-control"
-                          name={ 'tableName-' + idx }
-                          placeholder="The file name is defaults to the excel sheet name."
-                          value={ getSheet(idx, 'tableName') }
-                          onChange={ event => updateSheet(idx, 'tableName', event.target.value) } />
-                      </div>
+                            <div className="form-group">
+                              <label>Name</label>
+                              <input
+                                type="text"
+                                id={ 'tableName-' + idx }
+                                className="form-control"
+                                name={ 'tableName-' + idx }
+                                placeholder="The file name is defaults to the excel sheet name."
+                                value={ getSheet(idx, 'tableName') }
+                                onChange={ event => updateSheet(idx, 'tableName', event.target.value) } />
+                            </div>
 
-                      <div className="form-group">
-                        <label>Amount output columns</label>
-                        <input
-                          type="number"
-                          id={ 'amountOutputs-' + idx }
-                          className="form-control"
-                          name={ 'amountOutputs-' + idx }
-                          value={ getSheet(idx, 'amountOutputs') }
-                          onChange={ event => updateSheet(idx, 'amountOutputs', event.target.value) }
-                        />
-                      </div>
+                            <div className="form-group">
+                              <label>Amount output columns</label>
+                              <input
+                                type="number"
+                                id={ 'amountOutputs-' + idx }
+                                className="form-control"
+                                name={ 'amountOutputs-' + idx }
+                                value={ getSheet(idx, 'amountOutputs') }
+                                onChange={ event => updateSheet(idx, 'amountOutputs', event.target.value) }
+                              />
+                            </div>
 
-                      <div className="form-group">
-                        <label>Hit Policy</label>
-                        <select
-                          id={ 'hitPolicy-' + idx }
-                          className="form-control"
-                          name={ 'hitPolicy-' + idx }
-                          value={ getSheet(idx, 'hitPolicy') }
-                          onChange={ event => updateSheet(idx, 'hitPolicy', event.target.value) }>
-                          <option>Unique</option>
-                          <option>First</option>
-                          <option>Priority</option>
-                          <option>Any</option>
-                          <option>Collect</option>
-                          <option>Collect (Sum)</option>
-                          <option>Collect (Min)</option>
-                          <option>Collect (Max)</option>
-                          <option>Collect (Count)</option>
-                          <option>Rule order</option>
-                          <option>Output order</option>
-                        </select>
-                      </div>
+                            <div className="form-group">
+                              <label>Hit Policy</label>
+                              <select
+                                id={ 'hitPolicy-' + idx }
+                                className="form-control"
+                                name={ 'hitPolicy-' + idx }
+                                value={ getSheet(idx, 'hitPolicy') }
+                                onChange={ event => updateSheet(idx, 'hitPolicy', event.target.value) }>
+                                <option>Unique</option>
+                                <option>First</option>
+                                <option>Priority</option>
+                                <option>Any</option>
+                                <option>Collect</option>
+                                <option>Collect (Sum)</option>
+                                <option>Collect (Min)</option>
+                                <option>Collect (Max)</option>
+                                <option>Collect (Count)</option>
+                                <option>Rule order</option>
+                                <option>Output order</option>
+                              </select>
+                            </div>
 
-                    </div>
-                  </fieldset>
-                );
-              })
-            }
-          </form>
-
-          <Section.Actions>
-            <button
-              type="submit"
-              className="btn btn-primary"
-              disabled={ !isValid() }
-              form="import-form">Import</button>
-          </Section.Actions>
-        </Section.Body>
-      </Section>
+                          </div>
+                        </fieldset>
+                      </Section.Body>
+                    </Section>
+                  );
+                })
+              }
+            </form>
+          </Section.Body>
+        </Section>
+        <Section>
+          <Section.Body>
+            <Section.Actions>
+              <button
+                type="submit"
+                className="btn btn-primary"
+                disabled={ !isValid() }
+                form="import-form">Import</button>
+            </Section.Actions>
+          </Section.Body>
+        </Section>
+      </React.Fragment>
     ) : null }
   </Overlay>;
 }
