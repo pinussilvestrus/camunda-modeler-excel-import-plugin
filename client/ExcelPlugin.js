@@ -8,7 +8,9 @@ import {
   Fill
 } from 'camunda-modeler-plugin-helpers/components';
 
-import ImportModal from './ImportModal';
+import classNames from 'classnames';
+
+import ImportOverlay from './ImportOverlay';
 
 import OpenIcon from '../resources/file-excel.svg';
 import ExportIcon from '../resources/file-excel-export.svg';
@@ -50,6 +52,7 @@ export default class ExcelPlugin extends PureComponent {
     super(props);
 
     this.state = defaultState;
+    this._buttonRef = React.createRef();
   }
 
   componentDidMount() {
@@ -364,8 +367,9 @@ export default class ExcelPlugin extends PureComponent {
     return <Fragment>
       <Fill slot="status-bar__file" group="xx_excel">
         <button
+          ref={ this._buttonRef }
           title="Open excel sheet"
-          className="btn"
+          className={ classNames('btn', { 'btn--active': this.state.modalOpen }) }
           onClick={ this.openModal.bind(this) }
         >
           <OpenIcon />
@@ -384,7 +388,8 @@ export default class ExcelPlugin extends PureComponent {
         </Fill>
       )}
       { this.state.modalOpen && (
-        <ImportModal
+        <ImportOverlay
+          anchor={ this._buttonRef.current }
           getSheets={ this.getSheets.bind(this) }
           onClose={ this.handleConfigClosed.bind(this) }
           initValues={ initValues }

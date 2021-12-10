@@ -74,135 +74,6 @@ module.exports["default"] = module.exports, module.exports.__esModule = true;
 
 /***/ }),
 
-/***/ "./client/Dropzone.js":
-/*!****************************!*\
-  !*** ./client/Dropzone.js ***!
-  \****************************/
-/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
-
-"use strict";
-__webpack_require__.r(__webpack_exports__);
-/* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   "default": () => (/* binding */ DropZone)
-/* harmony export */ });
-/* harmony import */ var camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! camunda-modeler-plugin-helpers/react */ "./node_modules/camunda-modeler-plugin-helpers/react.js");
-/* harmony import */ var camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0__);
-
-class DropZone extends (camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().PureComponent) {
-  constructor(props) {
-    super(props);
-    this.state = {
-      draggingOver: false
-    };
-  }
-
-  handleDragOver(event) {
-    if (!this.isDragAllowed(event)) {
-      return;
-    }
-
-    event.preventDefault();
-    event.dataTransfer.dropEffect = 'copy';
-
-    if (this.state.draggingOver) {
-      return;
-    }
-
-    event.stopPropagation();
-    this.setState({
-      draggingOver: true
-    });
-  }
-  /**
-   * @param {DragEvent} event
-   */
-
-
-  isDragAllowed(event) {
-    const {
-      dataTransfer
-    } = event;
-    const {
-      items
-    } = dataTransfer;
-
-    if (items.length != 1) {
-      return false;
-    }
-
-    return isDropableItem(items[0]);
-  }
-
-  handleDragLeave(event) {
-    event.preventDefault();
-    event.stopPropagation();
-
-    if (this.state.draggingOver && !event.relatedTarget) {
-      this.setState({
-        draggingOver: false
-      });
-    }
-  }
-
-  handleDrop(event) {
-    if (!this.state.draggingOver) {
-      return;
-    }
-
-    event.preventDefault();
-    event.stopPropagation();
-    this.setState({
-      draggingOver: false
-    });
-    this.props.onDrop(event.dataTransfer.files);
-  }
-
-  render() {
-    return /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
-      className: "plugin-dropzone",
-      onDragOver: this.handleDragOver.bind(this),
-      onDragLeave: this.handleDragLeave.bind(this),
-      onDrop: this.handleDrop.bind(this)
-    }, this.state.draggingOver ? /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement(DropOverlay, null) : null, this.props.children);
-  }
-
-}
-DropZone.defaultProps = {
-  onDrop: () => {}
-};
-
-function DropOverlay() {
-  return /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
-    className: "plugin-dropzone-overlay"
-  }, /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
-    className: "box"
-  }, /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", null, "Drop Excel sheet here")));
-} // helpers /////////////////////
-
-/**
- * Checks for droppable items, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.
- *
- * @param {Object} item - Item to be dropped.
- *
- * @returns {boolean}
- */
-
-
-function isDropableItem(item) {
-  const {
-    kind,
-    type
-  } = item;
-
-  if (kind !== 'file') {
-    return false;
-  }
-
-  return type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
-}
-
-/***/ }),
-
 /***/ "./client/ExcelPlugin.js":
 /*!*******************************!*\
   !*** ./client/ExcelPlugin.js ***!
@@ -217,12 +88,15 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! camunda-modeler-plugin-helpers/react */ "./node_modules/camunda-modeler-plugin-helpers/react.js");
 /* harmony import */ var camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0__);
 /* harmony import */ var camunda_modeler_plugin_helpers_components__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! camunda-modeler-plugin-helpers/components */ "./node_modules/camunda-modeler-plugin-helpers/components.js");
-/* harmony import */ var _ImportModal__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./ImportModal */ "./client/ImportModal.js");
-/* harmony import */ var _resources_file_excel_svg__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../resources/file-excel.svg */ "./resources/file-excel.svg");
-/* harmony import */ var _resources_file_excel_export_svg__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ../resources/file-excel-export.svg */ "./resources/file-excel-export.svg");
-/* harmony import */ var _helper_hitPolicies__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ./helper/hitPolicies */ "./client/helper/hitPolicies.js");
-/* harmony import */ var _converter__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ../converter */ "./converter/index.js");
+/* harmony import */ var classnames__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! classnames */ "./node_modules/classnames/index.js");
+/* harmony import */ var classnames__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__webpack_require__.n(classnames__WEBPACK_IMPORTED_MODULE_2__);
+/* harmony import */ var _ImportOverlay__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./ImportOverlay */ "./client/ImportOverlay.js");
+/* harmony import */ var _resources_file_excel_svg__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ../resources/file-excel.svg */ "./resources/file-excel.svg");
+/* harmony import */ var _resources_file_excel_export_svg__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ../resources/file-excel-export.svg */ "./resources/file-excel-export.svg");
+/* harmony import */ var _helper_hitPolicies__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ./helper/hitPolicies */ "./client/helper/hitPolicies.js");
+/* harmony import */ var _converter__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ../converter */ "./converter/index.js");
 /* eslint-disable no-unused-vars*/
+
 
 
 
@@ -251,6 +125,7 @@ class ExcelPlugin extends camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED
   constructor(props) {
     super(props);
     this.state = defaultState;
+    this._buttonRef = camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createRef();
   }
 
   componentDidMount() {
@@ -385,7 +260,7 @@ class ExcelPlugin extends camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED
       buffer,
       sheets
     } = options;
-    const xml = (0,_converter__WEBPACK_IMPORTED_MODULE_6__.convertXlsxToDmn)({
+    const xml = (0,_converter__WEBPACK_IMPORTED_MODULE_7__.convertXlsxToDmn)({
       buffer,
       sheets
     });
@@ -464,7 +339,7 @@ class ExcelPlugin extends camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED
     const {
       contents
     } = excelSheet;
-    const dmnContents = await (0,_converter__WEBPACK_IMPORTED_MODULE_6__.parseDmn)({
+    const dmnContents = await (0,_converter__WEBPACK_IMPORTED_MODULE_7__.parseDmn)({
       buffer: contents
     });
     return dmnContents;
@@ -505,7 +380,7 @@ class ExcelPlugin extends camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED
       const {
         contents,
         exportedDecisionTables
-      } = await (0,_converter__WEBPACK_IMPORTED_MODULE_6__.convertDmnToXlsx)({
+      } = await (0,_converter__WEBPACK_IMPORTED_MODULE_7__.convertDmnToXlsx)({
         xml: file.contents
       }); // (3) save file on disk
 
@@ -541,17 +416,21 @@ class ExcelPlugin extends camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED
       slot: "status-bar__file",
       group: "xx_excel"
     }, /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement("button", {
+      ref: this._buttonRef,
       title: "Open excel sheet",
-      className: "btn",
+      className: classnames__WEBPACK_IMPORTED_MODULE_2___default()('btn', {
+        'btn--active': this.state.modalOpen
+      }),
       onClick: this.openModal.bind(this)
-    }, /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_resources_file_excel_svg__WEBPACK_IMPORTED_MODULE_3__["default"], null))), isDMN(activeTab) && /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement(camunda_modeler_plugin_helpers_components__WEBPACK_IMPORTED_MODULE_1__.Fill, {
+    }, /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_resources_file_excel_svg__WEBPACK_IMPORTED_MODULE_4__["default"], null))), isDMN(activeTab) && /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement(camunda_modeler_plugin_helpers_components__WEBPACK_IMPORTED_MODULE_1__.Fill, {
       slot: "status-bar__file",
       group: "xx_excel"
     }, /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement("button", {
       title: "Export as excel sheet",
       className: "btn",
       onClick: this.export.bind(this)
-    }, /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_resources_file_excel_export_svg__WEBPACK_IMPORTED_MODULE_4__["default"], null))), this.state.modalOpen && /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_ImportModal__WEBPACK_IMPORTED_MODULE_2__["default"], {
+    }, /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_resources_file_excel_export_svg__WEBPACK_IMPORTED_MODULE_5__["default"], null))), this.state.modalOpen && /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_ImportOverlay__WEBPACK_IMPORTED_MODULE_3__["default"], {
+      anchor: this._buttonRef.current,
       getSheets: this.getSheets.bind(this),
       onClose: this.handleConfigClosed.bind(this),
       initValues: initValues
@@ -582,7 +461,7 @@ const createOutputPath = details => {
 };
 
 const toHitPolicy = rawValue => {
-  return _helper_hitPolicies__WEBPACK_IMPORTED_MODULE_5__["default"][rawValue];
+  return _helper_hitPolicies__WEBPACK_IMPORTED_MODULE_6__["default"][rawValue];
 };
 
 const NoopHandler = function () {
@@ -596,7 +475,7 @@ const isDMN = tab => {
 };
 
 const isMultiSheet = async contents => {
-  const dmnContents = await (0,_converter__WEBPACK_IMPORTED_MODULE_6__.parseDmn)({
+  const dmnContents = await (0,_converter__WEBPACK_IMPORTED_MODULE_7__.parseDmn)({
     buffer: contents
   });
   return dmnContents && dmnContents.length > 1;
@@ -604,43 +483,29 @@ const isMultiSheet = async contents => {
 
 /***/ }),
 
-/***/ "./client/ImportModal.js":
-/*!*******************************!*\
-  !*** ./client/ImportModal.js ***!
-  \*******************************/
+/***/ "./client/ImportOverlay.js":
+/*!*********************************!*\
+  !*** ./client/ImportOverlay.js ***!
+  \*********************************/
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   "default": () => (/* binding */ ImportModal)
+/* harmony export */   "default": () => (/* binding */ ImportOverlay)
 /* harmony export */ });
 /* harmony import */ var camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! camunda-modeler-plugin-helpers/react */ "./node_modules/camunda-modeler-plugin-helpers/react.js");
 /* harmony import */ var camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0__);
 /* harmony import */ var camunda_modeler_plugin_helpers_components__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! camunda-modeler-plugin-helpers/components */ "./node_modules/camunda-modeler-plugin-helpers/components.js");
-/* harmony import */ var _Dropzone__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./Dropzone */ "./client/Dropzone.js");
 /* eslint-disable no-unused-vars */
-
- // polyfill upcoming structural components
-
-const Title = camunda_modeler_plugin_helpers_components__WEBPACK_IMPORTED_MODULE_1__.Modal.Title || (({
-  children
-}) => /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement("h2", null, children));
-
-const Body = camunda_modeler_plugin_helpers_components__WEBPACK_IMPORTED_MODULE_1__.Modal.Body || (({
-  children
-}) => /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", null, children));
-
-const Footer = camunda_modeler_plugin_helpers_components__WEBPACK_IMPORTED_MODULE_1__.Modal.Footer || (({
-  children
-}) => /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", null, children));
 
 
 
 const path = __webpack_require__(/*! path */ "./node_modules/path-browserify/index.js");
 
-function ImportModal(props) {
+function ImportOverlay(props) {
   const {
+    anchor,
     initValues,
     getSheets,
     onClose
@@ -704,26 +569,12 @@ function ImportModal(props) {
     sheets
   });
 
-  const handleDrop = (files = []) => {
-    if (!files.length) {
-      return;
-    }
-
-    handleInputFileChange({
-      target: {
-        files
-      }
-    });
-  };
-
-  return /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement(camunda_modeler_plugin_helpers_components__WEBPACK_IMPORTED_MODULE_1__.Modal, {
+  return /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement(camunda_modeler_plugin_helpers_components__WEBPACK_IMPORTED_MODULE_1__.Overlay, {
+    anchor: anchor,
     onClose: onClose
-  }, /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_Dropzone__WEBPACK_IMPORTED_MODULE_2__["default"], {
-    onDrop: handleDrop
-  }, /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement(Title, null, "Import Excel Sheet (.xlsx)"), /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement(Body, null, /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement("form", {
-    id: "import-form",
-    className: "import-form",
-    onSubmit: handleSubmit
+  }, /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement(camunda_modeler_plugin_helpers_components__WEBPACK_IMPORTED_MODULE_1__.Section, null, /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement(camunda_modeler_plugin_helpers_components__WEBPACK_IMPORTED_MODULE_1__.Section.Header, null, "Import Excel Sheet"), /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement(camunda_modeler_plugin_helpers_components__WEBPACK_IMPORTED_MODULE_1__.Section.Body, null, /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement("form", {
+    id: "select-file",
+    className: "import-form"
   }, /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement("fieldset", null, /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
     className: "fields"
   }, /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
@@ -732,7 +583,7 @@ function ImportModal(props) {
     className: "file-input"
   }, /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement("button", {
     type: "button",
-    className: "btn btn-secondary",
+    className: "btn btn-primary",
     onClick: handleInputFileClick
   }, "Select .xlsx file"), /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement("p", null, chosenFileText)), /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement("input", {
     type: "file",
@@ -741,8 +592,14 @@ function ImportModal(props) {
     className: "form-control",
     name: "inputFile",
     onChange: handleInputFileChange
-  })))), rawSheets.map(function (rawSheet, idx) {
-    return /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement("fieldset", null, /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement("legend", null, "Decision Table Details - ", rawSheet.name, " "), /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+  }))))))), rawSheets.length ? /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement(camunda_modeler_plugin_helpers_components__WEBPACK_IMPORTED_MODULE_1__.Section, {
+    maxHeight: "400px"
+  }, /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement(camunda_modeler_plugin_helpers_components__WEBPACK_IMPORTED_MODULE_1__.Section.Body, null, /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement("form", {
+    id: "import-form",
+    className: "import-form",
+    onSubmit: handleSubmit
+  }, rawSheets.map(function (rawSheet, idx) {
+    return /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement("fieldset", null, /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement(camunda_modeler_plugin_helpers_components__WEBPACK_IMPORTED_MODULE_1__.Section.Header, null, "Decision Table Details - ", rawSheet.name), /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
       className: "fields"
     }, /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
       className: "form-group"
@@ -772,18 +629,12 @@ function ImportModal(props) {
       value: getSheet(idx, 'hitPolicy'),
       onChange: event => updateSheet(idx, 'hitPolicy', event.target.value)
     }, /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement("option", null, "Unique"), /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement("option", null, "First"), /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement("option", null, "Priority"), /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement("option", null, "Any"), /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement("option", null, "Collect"), /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement("option", null, "Collect (Sum)"), /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement("option", null, "Collect (Min)"), /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement("option", null, "Collect (Max)"), /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement("option", null, "Collect (Count)"), /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement("option", null, "Rule order"), /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement("option", null, "Output order")))));
-  }))), /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement(Footer, null, /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
-    className: "import-buttons"
-  }, /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement("button", {
+  })), /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement(camunda_modeler_plugin_helpers_components__WEBPACK_IMPORTED_MODULE_1__.Section.Actions, null, /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement("button", {
     type: "submit",
     className: "btn btn-primary",
     disabled: !isValid(),
     form: "import-form"
-  }, "Import"), /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement("button", {
-    type: "button",
-    className: "btn btn-secondary",
-    onClick: () => onClose()
-  }, "Cancel")))));
+  }, "Import")))) : null);
 } // helpers ////////////////////////
 
 const getFileNameWithoutExtension = file => {
@@ -3763,17 +3614,47 @@ function BufferBigIntNotDefined () {
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "NotCompatible": () => (/* binding */ NotCompatible),
 /* harmony export */   "Fill": () => (/* binding */ Fill),
-/* harmony export */   "Modal": () => (/* binding */ Modal)
+/* harmony export */   "Modal": () => (/* binding */ Modal),
+/* harmony export */   "Overlay": () => (/* binding */ Overlay),
+/* harmony export */   "Section": () => (/* binding */ Section),
+/* harmony export */   "ToggleSwitch": () => (/* binding */ ToggleSwitch)
 /* harmony export */ });
 if (!window.components) {
-  throw new Error('Not compatible with Camunda Modeler < 3.4');
+  throw notCompatible('3.4');
 }
 
+function notCompatible(requiredVersion) {
+  return new Error('Not compatible with Camunda Modeler < v' + requiredVersion);
+}
+
+const NotCompatible = function(requiredVersion) {
+  return function NotCompatibleComponent() {
+    throw notCompatible(requiredVersion);
+  };
+};
+
 /**
- * Fill component.
+ * Fill component. Set `slot` to "toolbar" to include in the top toolbar.
+ * Use `group` and `priority=0` to place for correct ordering. The higher
+ * the priority, the earlier the Fill is displayed within the group.
  *
- * @type {import('react').ComponentType<{ group: string, name: string }>}
+ * @type {import('react').ComponentType<{ slot: string, group?: string, priority?: Number }>}
+ *
+ * @example
+ *
+ * import { Fill } from 'camunda-modeler-plugin-helpers/components';
+ *
+ * function CustomFill(props) {
+ *   return (
+ *     <Fill group="4_export" slot="toolbar" priority={100}>
+ *       <button type="button" onClick={ props.openExportTool }>
+ *         Open Export Tool
+ *       </button>
+ *     </Fill>
+ *   );
+ * }
  */
 const Fill = window.components.Fill;
 
@@ -3781,8 +3662,125 @@ const Fill = window.components.Fill;
  * Modal component.
  *
  * @type {import('react').ComponentType<{ onClose: Function }>}
+ *
+ * @example
+ *
+ * import { Modal } from 'camunda-modeler-plugin-helpers/components';
+ *
+ * function CustomModal(props) {
+ *   return (
+ *    <Modal onClose={ props.onClose }>
+ *      <Modal.Title>
+ *        Custom Modal
+ *      </Modal.Title>
+ *      <Modal.Body>
+ *        Hello world!
+ *      </Modal.Body>
+ *      <Modal.Footer>
+ *        <button type="button" onClick={ props.onClose }>
+ *          Close
+ *        </button>
+ *      </Modal.Footer>
+ *    </Modal>
+ *   );
+ * }
  */
 const Modal = window.components.Modal;
+
+/**
+ * Overlay component.
+ *
+ * @type {import('react').ComponentType<{ 
+ *  onClose: Function, 
+ *  anchor: Node, 
+ *  offset?: { top?: number, bottom?: number, left?: number, right?: number }, 
+ *  maxWidth?: number | string,
+ *  maxHeight?: number | string,
+ *  minWidth?: number | string,
+ *  minHeight?: number | string
+ * }>}
+ *
+ * @example
+ * 
+ * import { Overlay } from 'camunda-modeler-plugin-helpers/components';
+ *
+ * function CustomOverlay(props) {
+ *   return (
+ *    <Overlay onClose={ props.onClose } anchor={ props.btn_ref } offset={ props.anchor }>
+ *      <Overlay.Title>
+ *        Custom Modal
+ *      </Overlay.Title>
+ *      <Overlay.Body>
+ *        Hello world!
+ *      </Overlay.Body>
+ *      <Overlay.Footer>
+ *        <button type="button" onClick={ props.onClose }>
+ *          Close
+ *        </button>
+ *      </Overlay.Footer>
+ *    </Overlay>
+ *   );
+ * }
+ */
+ const Overlay = window.components.Overlay || NotCompatible('5.0');
+
+ /**
+ * Section component.
+ *
+ * @type {import('react').ComponentType<{ maxHeight: Number | String, relativePos: Boolean } }>}
+ *
+ * @example
+ * 
+ * import { Section } from 'camunda-modeler-plugin-helpers/components';
+ *
+ * function CustomSection(props) {
+ *   return (
+ *    <Section maxHeight="240px">
+ *     <Section.Header>
+ *       Custom section
+ *     </Section.Header>
+ *     <Section.Body>
+ *       Hello world!
+ *     </Section.Body>
+ *     <Section.Actions>
+ *      <button type="button" onClick={ props.onClose }>
+ *        Close
+ *      </button>
+ *     </Section.Actions>
+ *    </Section>
+ *   );
+ * }
+ */
+const Section = window.components.Section || NotCompatible('5.0');
+
+ /**
+ * ToggleSwitch component.
+ *
+ * @type {import('react').ComponentType<{ id: string, name: string, label?: string, switcherLabel?: string, description?: string }>}
+ *
+ * @example
+ * 
+ * import { ToggleSwitch } from 'camunda-modeler-plugin-helpers/components';
+ *
+ * function CustomToggle(props) {
+ *   return (
+ *    <Formik initialValues={ initialValues } onSubmit={ this.onSubmit }>
+ *      {() => (
+ *        <Form>
+ *          <Field
+ *            component={ ToggleSwitch }
+ *            switcherLabel="Switcher label"
+ *            id={ id }
+ *            name={ name }
+ *            description="Toggle description"
+ *          />
+ *        </Form>
+ *       )}
+ *    </Formik>
+ *   );
+ * }
+ */
+const ToggleSwitch = window.components.ToggleSwitch || NotCompatible('5.0');
 
 /***/ }),
 
@@ -3981,6 +3979,73 @@ if (!window.react) {
  * @type {import('react')}
  */
 module.exports = window.react;
+
+/***/ }),
+
+/***/ "./node_modules/classnames/index.js":
+/*!******************************************!*\
+  !*** ./node_modules/classnames/index.js ***!
+  \******************************************/
+/***/ ((module, exports) => {
+
+var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/*!
+  Copyright (c) 2018 Jed Watson.
+  Licensed under the MIT License (MIT), see
+  http://jedwatson.github.io/classnames
+*/
+/* global define */
+
+(function () {
+	'use strict';
+
+	var hasOwn = {}.hasOwnProperty;
+
+	function classNames() {
+		var classes = [];
+
+		for (var i = 0; i < arguments.length; i++) {
+			var arg = arguments[i];
+			if (!arg) continue;
+
+			var argType = typeof arg;
+
+			if (argType === 'string' || argType === 'number') {
+				classes.push(arg);
+			} else if (Array.isArray(arg)) {
+				if (arg.length) {
+					var inner = classNames.apply(null, arg);
+					if (inner) {
+						classes.push(inner);
+					}
+				}
+			} else if (argType === 'object') {
+				if (arg.toString === Object.prototype.toString) {
+					for (var key in arg) {
+						if (hasOwn.call(arg, key) && arg[key]) {
+							classes.push(key);
+						}
+					}
+				} else {
+					classes.push(arg.toString());
+				}
+			}
+		}
+
+		return classes.join(' ');
+	}
+
+	if ( true && module.exports) {
+		classNames.default = classNames;
+		module.exports = classNames;
+	} else if (true) {
+		// register as 'classnames', consistent with npm package name
+		!(__WEBPACK_AMD_DEFINE_ARRAY__ = [], __WEBPACK_AMD_DEFINE_RESULT__ = (function () {
+			return classNames;
+		}).apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__),
+		__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+	} else {}
+}());
+
 
 /***/ }),
 
