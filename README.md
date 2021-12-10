@@ -1,6 +1,6 @@
 # camunda-modeler-excel-import-plugin
 
-![Build Status](https://github.com/pinussilvestrus/camunda-modeler-excel-import-plugin/workflows/ci/badge.svg) [![Compatible with Camunda Modeler Branch hackdays-excel-plugin](https://img.shields.io/badge/Camunda%20Modeler-4.3+-blue.svg)](https://github.com/camunda/camunda-modeler)
+![Build Status](https://github.com/pinussilvestrus/camunda-modeler-excel-import-plugin/workflows/ci/badge.svg) [![Compatible with Camunda Modeler version 5.0](https://img.shields.io/badge/Camunda%20Modeler-5.0+-blue.svg)](https://github.com/camunda/camunda-modeler)
 
 [Camunda Modeler](https://github.com/camunda/camunda-modeler/) plugin to import Excel Sheets to DMN 1.3 Decision Tables (and vice versa).
 
@@ -44,7 +44,7 @@ This plugin is currently only compatible with following Camunda Modeler versions
 | Camunda Modeler | Excel Plugin |
 |---|---|
 | 4.3 - 4.12  | 1.0 - 1.3 |
-| 5.x | 1.4 |
+| 5.x | 1.4 or newer |
 
 ## Contributors
 
