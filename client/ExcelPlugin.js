@@ -365,11 +365,11 @@ export default class ExcelPlugin extends PureComponent {
     };
 
     return <Fragment>
-      <Fill slot="status-bar__file" group="xx_excel">
+      <Fill slot="tab-actions" group="xx_excel">
         <button
           ref={ this._buttonRef }
           title="Open excel sheet"
-          className={ classNames('btn', { 'btn--active': this.state.modalOpen }) }
+          className={ classNames('btn btn--tab-action', { 'btn--active': this.state.modalOpen }) }
           onClick={ this.openModal.bind(this) }
         >
           <OpenIcon />
