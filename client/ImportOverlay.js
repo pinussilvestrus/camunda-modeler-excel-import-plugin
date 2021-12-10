@@ -4,6 +4,9 @@ import { Overlay, Section } from 'camunda-modeler-plugin-helpers/components';
 
 const path = require('path');
 
+const OVERLAY_OFFSET = { top: 0, right: 0 };
+
+
 export default function ImportOverlay(props) {
   const {
     anchor,
@@ -78,7 +81,7 @@ export default function ImportOverlay(props) {
     sheets
   });
 
-  return <Overlay anchor={ anchor } onClose={ onClose }>
+  return <Overlay offset={ OVERLAY_OFFSET } anchor={ anchor } onClose={ onClose }>
     <Section>
       <Section.Header>
         Import Excel Sheet
@@ -118,7 +121,7 @@ export default function ImportOverlay(props) {
             {
               rawSheets.map(function(rawSheet, idx) {
                 return (
-                  <fieldset>
+                  <fieldset key={ idx }>
 
                     <Section.Header>
                       Decision Table Details - { rawSheet.name }

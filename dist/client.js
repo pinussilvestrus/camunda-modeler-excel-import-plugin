@@ -413,12 +413,12 @@ class ExcelPlugin extends camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED
       hitPolicy
     };
     return /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement(camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement(camunda_modeler_plugin_helpers_components__WEBPACK_IMPORTED_MODULE_1__.Fill, {
-      slot: "status-bar__file",
+      slot: "tab-actions",
       group: "xx_excel"
     }, /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement("button", {
       ref: this._buttonRef,
       title: "Open excel sheet",
-      className: classnames__WEBPACK_IMPORTED_MODULE_2___default()('btn', {
+      className: classnames__WEBPACK_IMPORTED_MODULE_2___default()('btn btn--tab-action', {
         'btn--active': this.state.modalOpen
       }),
       onClick: this.openModal.bind(this)
@@ -503,6 +503,10 @@ __webpack_require__.r(__webpack_exports__);
 
 const path = __webpack_require__(/*! path */ "./node_modules/path-browserify/index.js");
 
+const OVERLAY_OFFSET = {
+  top: 0,
+  right: 0
+};
 function ImportOverlay(props) {
   const {
     anchor,
@@ -570,6 +574,7 @@ function ImportOverlay(props) {
   });
 
   return /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement(camunda_modeler_plugin_helpers_components__WEBPACK_IMPORTED_MODULE_1__.Overlay, {
+    offset: OVERLAY_OFFSET,
     anchor: anchor,
     onClose: onClose
   }, /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement(camunda_modeler_plugin_helpers_components__WEBPACK_IMPORTED_MODULE_1__.Section, null, /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement(camunda_modeler_plugin_helpers_components__WEBPACK_IMPORTED_MODULE_1__.Section.Header, null, "Import Excel Sheet"), /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement(camunda_modeler_plugin_helpers_components__WEBPACK_IMPORTED_MODULE_1__.Section.Body, null, /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement("form", {
@@ -599,7 +604,9 @@ function ImportOverlay(props) {
     className: "import-form",
     onSubmit: handleSubmit
   }, rawSheets.map(function (rawSheet, idx) {
-    return /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement("fieldset", null, /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement(camunda_modeler_plugin_helpers_components__WEBPACK_IMPORTED_MODULE_1__.Section.Header, null, "Decision Table Details - ", rawSheet.name), /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+    return /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement("fieldset", {
+      key: idx
+    }, /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement(camunda_modeler_plugin_helpers_components__WEBPACK_IMPORTED_MODULE_1__.Section.Header, null, "Decision Table Details - ", rawSheet.name), /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
       className: "fields"
     }, /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
       className: "form-group"
