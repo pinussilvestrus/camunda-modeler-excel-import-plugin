@@ -1,100 +1,22 @@
-.import-form * {
-  font-size: 16px;
+.import-form .section__header {
+  padding-left: 0;
 }
 
-.import-form fieldset {
-  margin-top: 0;
-}
-
-.import-form input:disabled {
-  color: var(--color-cccccc) !important;
-}
-
-.import-form input:disabled:hover {
-  cursor: not-allowed;
-}
-
-.import-form select, .import-form input[type="number"] {
-  border-radius: 3px;
-  border: solid 1px var(--silver-darken-80);
-  background-color: var(--color-ffffff);
-  width: 556px;
-  height: 30px;
-  font-size: 13px;
-  padding-left: 8px;
-  color: var(--grey-darken-30);
-  font-weight: normal;
-  font-stretch: normal;
-  font-style: normal;
-  line-height: normal;
-  letter-spacing: normal;
-  float: left;
-}
-
-.import-form #outputDirectory {
-  display: none;
-}
-
-.import-form #inputFile {
+.import-form .file-input input {
   display: none;
 }
 
 .import-form .file-input .btn {
-  font-size: 12px;
+  box-shadow: none;
   font-weight: normal;
 }
 
 .import-form .file-input .btn:focus {
+  border: none;
   outline: none;
 }
 
 .import-form .file-input p {
   display: inline-block;
   margin-left: 12px;
-}
-
-.import-buttons button {
-  font-size: 16px;
-  margin-left: 6px;
-}
-
-.import-buttons {
-  display: flex;
-  justify-content: flex-end;
-}
-
-.plugin-dropzone {
-  height: 100%;
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  max-height: 84vh;
-  flex: auto;
-}
-
-.plugin-dropzone-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  bottom: 0;
-  right: 0;
-  padding: 120px 50px;
-  background: var(--color-ffffff-opacity-80);
-  pointer-events: none;
-  z-index: 1000;
-}
-
-.plugin-dropzone-overlay .box {
-  text-align: center;
-  border: dashed 4px var(--color-dddddd);
-  height: 100%;
-  vertical-align: middle;
-}
-
-.plugin-dropzone-overlay .box > div {
-  font-size: 26px;
-  color: var(--color-999999);
-  margin: auto;
-  top: 45%;
-  position: relative;
 }
