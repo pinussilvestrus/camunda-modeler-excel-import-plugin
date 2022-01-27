@@ -43,8 +43,8 @@ This plugin is currently only compatible with following Camunda Modeler versions
 
 | Camunda Modeler | Excel Plugin |
 |---|---|
-| 4.3 - 4.12  | 1.0 - 1.3 |
-| 5.x | 1.4 or newer |
+| 4.3 - 4.12  | 1.0 - 1.2 |
+| 5.x | 1.3 or newer |
 
 ## Contributors
 
