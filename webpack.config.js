@@ -17,7 +17,7 @@ module.exports = {
         use: {
           loader: 'babel-loader',
           options: {
-            presets: ['@babel/preset-react']
+            presets: [ '@babel/preset-react' ]
           }
         }
       },
@@ -39,7 +39,7 @@ module.exports = {
   devtool: 'cheap-module-source-map',
   plugins: [
     new webpack.ProvidePlugin({
-      Buffer: ['buffer', 'Buffer'],
+      Buffer: [ 'buffer', 'Buffer' ],
     })
   ]
 };

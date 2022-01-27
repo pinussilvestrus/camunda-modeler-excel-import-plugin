@@ -219,5 +219,5 @@ const getDirectory = (file) => {
 };
 
 const times = (n, fn) => {
-  return [...Array(n)].map(fn);
+  return [ ...Array(n) ].map(fn);
 };

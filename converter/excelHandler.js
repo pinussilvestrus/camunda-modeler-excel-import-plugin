@@ -88,7 +88,7 @@ const getOutputs = (outputArray = [], typeRefs, amountOutputs) => {
 const getRules = (rows = [], amountOutputs, headerLength) => {
   return rows.map((row) => {
     const ruleData = { id: nextId('Rule_'),
-      description: row[row.length -1],
+      description: row[row.length - 1],
       inputEntries: getEntries(row.slice(0, headerLength - amountOutputs), 'InputEntry'),
       outputEntries: getEntries(row.slice(headerLength - amountOutputs, headerLength), 'OutputEntry')
     };

@@ -262,7 +262,7 @@ const standardExpectedRules = () => {
         { id: 'InputEntry00', text: '<= 500' },
         { id: 'InputEntry01', text: 'amount < b' }
       ],
-      outputEntries: [{ id: 'OutputEntry00', text: 'accounting' }]
+      outputEntries: [ { id: 'OutputEntry00', text: 'accounting' } ]
     },
     {
       id: 'Rule1',
@@ -271,7 +271,7 @@ const standardExpectedRules = () => {
         { id: 'InputEntry10', text: '> 800' },
         { id: 'InputEntry11', text: 2 }
       ],
-      outputEntries: [{ id: 'OutputEntry10', text: 'sales' }]
+      outputEntries: [ { id: 'OutputEntry10', text: 'sales' } ]
     },
     {
       id: 'Rule2',
@@ -280,7 +280,7 @@ const standardExpectedRules = () => {
         { id: 'InputEntry20', text: '> 500' },
         { id: 'InputEntry21', text: 3.56787 }
       ],
-      outputEntries: [{ id: 'OutputEntry20', text: 'management' }]
+      outputEntries: [ { id: 'OutputEntry20', text: 'management' } ]
     }
   ];
 };
