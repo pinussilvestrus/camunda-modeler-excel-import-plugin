@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 * ...
 
+## v1.3.0
+
+* `FEAT`: migrate to Camunda Modeler v5 ([#72](https://github.com/pinussilvestrus/camunda-modeler-excel-import-plugin/issues/72))
+
 ## v1.2.0
 
 * `FEAT`: import multiple excel sheets ([#41](https://github.com/pinussilvestrus/camunda-modeler-excel-import-plugin/issues/41))
