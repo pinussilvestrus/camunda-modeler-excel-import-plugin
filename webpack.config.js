@@ -2,6 +2,8 @@ const path = require('path');
 
 const webpack = require('webpack');
 
+const CamundaModelerWebpackPlugin = require('camunda-modeler-webpack-plugin');
+
 module.exports = {
   mode: 'development',
   entry: './client/index.js',
@@ -12,25 +14,12 @@ module.exports = {
   module: {
     rules: [
       {
-        test: /\.js$/,
-        exclude: /node_modules/,
-        use: {
-          loader: 'babel-loader',
-          options: {
-            presets: [ '@babel/preset-react' ]
-          }
-        }
-      },
-      {
         test: /\.svg$/,
         use: 'react-svg-loader'
       }
     ]
   },
   resolve: {
-    alias: {
-      react: 'camunda-modeler-plugin-helpers/react'
-    },
     fallback: {
       'path': require.resolve('path-browserify'),
       'buffer': require.resolve('buffer/')
@@ -40,6 +29,7 @@ module.exports = {
   plugins: [
     new webpack.ProvidePlugin({
       Buffer: [ 'buffer', 'Buffer' ],
-    })
+    }),
+    new CamundaModelerWebpackPlugin()
   ]
 };
