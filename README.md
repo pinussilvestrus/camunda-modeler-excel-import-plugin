@@ -15,7 +15,7 @@ It's also possible to export existing DMN 1.3 Decision Tables to Excel Sheets.
 1. Download and copy this folder into the `plugins` directory of the Camunda Modeler
 2. Start the Camunda Modeler
 
-Refer to the [plugins documentation](https://github.com/camunda/camunda-modeler/tree/master/docs/plugins#plugging-into-the-camunda-modeler) to get detailed information on how to create and integrate Camunda Modeler plugins.
+Refer to the [plugins documentation](https://docs.camunda.io/docs/components/modeler/desktop-modeler/plugins/) to get detailed information on how to create and integrate Camunda Modeler plugins.
 
 ## Development Setup
 
@@ -54,7 +54,7 @@ This project was built at the 2020 Camunda Summer Hack Days.
 
 ## Resources
 
-* [Camunda Modeler plugins documentation](https://github.com/camunda/camunda-modeler/tree/master/docs/plugins#plugging-into-the-camunda-modeler)
+* [Camunda Modeler plugins documentation](https://docs.camunda.io/docs/components/modeler/desktop-modeler/plugins/)
 
 
 ## License
