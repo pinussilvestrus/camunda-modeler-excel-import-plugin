@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 * ...
 
+## v1.3.1
+
+* `DEPS`: use stable version of `camunda-modeler-plugin-helpers`
+* `DEPS`: use `camunda-modeler-webpack-plugin` to bundle
+
 ## v1.3.0
 
 * `FEAT`: migrate to Camunda Modeler v5 ([#72](https://github.com/pinussilvestrus/camunda-modeler-excel-import-plugin/issues/72))
