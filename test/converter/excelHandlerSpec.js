@@ -3,6 +3,8 @@ const expect = chai.expect;
 
 const fs = require('fs');
 
+const xlsx = require('node-xlsx').default;
+
 const parseDmnContent = require('../../converter/excelHandler').parseDmnContent,
       buildXlsx = require('../../converter/excelHandler').buildXlsx;
 
@@ -193,7 +195,7 @@ describe('excelHandler', () => {
 
   describe('#buildXlsx', () => {
 
-    it('should create excel file buffer', () => {
+    it('should create valid excel file buffer', () => {
 
       // given
       const tables = createDecisionTables();
@@ -203,6 +205,11 @@ describe('excelHandler', () => {
 
       // then
       expect(xlsxBuffer).to.exist;
+      expect(Buffer.isBuffer(xlsxBuffer));
+
+      // re-import
+      const imported = xlsx.parse(xlsxBuffer);
+      expect(imported).to.exist;
     });
   });
 
