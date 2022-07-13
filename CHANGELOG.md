@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 * ...
 
+## 1.4.0
+
+* `FEAT`: add C8 DMN support ([#107](https://github.com/pinussilvestrus/camunda-modeler-excel-import-plugin/issues/107))
+* `FIX`: fix exporter ([#106](https://github.com/pinussilvestrus/camunda-modeler-excel-import-plugin/issues/106))
+
 ## v1.3.1
 
 * `DEPS`: use stable version of `camunda-modeler-plugin-helpers`
