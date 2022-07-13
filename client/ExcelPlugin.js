@@ -443,7 +443,7 @@ const NoopHandler = function() {
 };
 
 const isDMN = (tab) => {
-  return tab.type === 'dmn';
+  return tab.type === 'dmn' || tab.type === 'cloud-dmn';
 };
 
 const isMultiSheet = async (contents) => {
