@@ -151,6 +151,98 @@ describe('excelHandler', () => {
 
       const expectedRules = [
         {
+          description: '',
+          inputEntries: [
+            { text: '<= 500' }
+          ],
+          outputEntries: [
+            { text: 'amount < b' },
+            { text: 'accounting' }
+          ]
+        },
+        {
+          description: '',
+          inputEntries: [
+            { text: '> 800' }
+          ],
+          outputEntries: [
+            { text: 2 },
+            { text: 'sales' }
+          ]
+        },
+        {
+          description: '',
+          inputEntries: [
+            { text: '> 500' }
+          ],
+          outputEntries: [
+            { text: 3.56787 },
+            { text: 'management' }
+          ]
+        }
+      ];
+
+      expect(dmnContent.rules).to.have.length(expectedRules.length);
+      expect(dmnContent.rules[0].description).to.eql(expectedRules[0].description);
+      expect(dmnContent.rules[0].inputEntries.length).to.eql(expectedRules[0].inputEntries.length);
+      expect(dmnContent.rules[0].inputEntries[0].text).to.eql(expectedRules[0].inputEntries[0].text);
+      expect(dmnContent.rules[0].outputEntries.length).to.eql(expectedRules[0].outputEntries.length);
+      expect(dmnContent.rules[0].outputEntries[0].text).to.eql(expectedRules[0].outputEntries[0].text);
+    });
+
+
+    it('should return processed dmn content as json with 2 Output columns and with filled annotation column', function() {
+
+      // given
+      const options = createOptions({
+        sheet: {
+          amountOutputs: 2,
+          hasAnnotationColumn: true
+        }
+      });
+
+      // when
+      const dmnContents = parseDmnContent(options);
+
+      // then
+      expect(dmnContents).to.have.length(1);
+
+      const dmnContent = dmnContents[0];
+
+      expect(dmnContent.name).to.be.a('string');
+      expect(dmnContent.name).to.equal(options.sheets[0].tableName);
+      expect(dmnContent.hitPolicy).to.be.a('string');
+      expect(dmnContent.hitPolicy).to.equal(options.sheets[0].hitPolicy);
+
+      const expectedInputs = [
+        {
+          label: 'amount',
+          inputExpression: { text: 'amount', typeRef: 'string' }
+        }
+      ];
+      expect(dmnContent.inputs).to.have.length(expectedInputs.length);
+      expect(dmnContent.inputs[0].label).to.eql(expectedInputs[0].label);
+      expect(dmnContent.inputs[0].inputExpression.text).to.eql(expectedInputs[0].inputExpression.text);
+      expect(dmnContent.inputs[0].inputExpression.typeRef).to.eql(expectedInputs[0].inputExpression.typeRef);
+
+      const expectedOutputs = [
+        {
+          text: 'invoiceCategory',
+          name: 'invoiceCategory',
+          typeRef: 'boolean'
+        },
+        {
+          text: 'result',
+          name: 'result',
+          typeRef: 'string'
+        }
+      ];
+      expect(dmnContent.outputs).to.have.length(expectedOutputs.length);
+      expect(dmnContent.outputs[0].text).to.eql(expectedOutputs[0].text);
+      expect(dmnContent.outputs[0].typeRef).to.eql(expectedOutputs[0].typeRef);
+
+      const expectedRules = [
+        {
           description: 'accounting',
           inputEntries: [
             { text: '<= 500' }
@@ -189,7 +281,6 @@ describe('excelHandler', () => {
       expect(dmnContent.rules[0].outputEntries.length).to.eql(expectedRules[0].outputEntries.length);
       expect(dmnContent.rules[0].outputEntries[0].text).to.eql(expectedRules[0].outputEntries[0].text);
     });
-
   });
 
 
@@ -227,6 +318,7 @@ const createOptions = (overrides = {}) => {
         amountOutputs: 1,
         hitPolicy: 'UNIQUE',
         aggregation: undefined,
+        hasAnnotationColumn: false,
         ...overrides.sheet
       }
     ],
