@@ -32,7 +32,8 @@ export const parseDmnContent = ({
       aggregation,
       amountOutputs,
       tableName,
-      hitPolicy
+      hitPolicy,
+      hasAnnotationColumn
     } = sheetOptions;
 
     const rawInputData = header.slice(0, header.length - amountOutputs);
@@ -49,8 +50,8 @@ export const parseDmnContent = ({
       hitPolicy,
       aggregation,
       inputs: getInputs(rawInputData, typeRefs),
-      outputs: getOutputs(rawOutputData, typeRefs),
-      rules: getRules(safeRuleRows, amountOutputs, header.length)
+      outputs: getOutputs(rawOutputData, typeRefs.slice(header.length - amountOutputs)),
+      rules: getRules(safeRuleRows, amountOutputs, header.length, hasAnnotationColumn)
     });
   });
 
@@ -82,13 +83,13 @@ const getInputs = (inputArray = [], typeRefs) => {
 };
 
 const getOutputs = (outputArray = [], typeRefs, amountOutputs) => {
-  return outputArray.map((text, index) => output(nextId('Output_'), text, text, typeRefs[typeRefs.length - outputArray.length + index]));
+  return outputArray.map((text, index) => output(nextId('Output_'), text, text, typeRefs[index]));
 };
 
-const getRules = (rows = [], amountOutputs, headerLength) => {
+const getRules = (rows = [], amountOutputs, headerLength, hasAnnotationColumn) => {
   return rows.map((row) => {
     const ruleData = { id: nextId('Rule_'),
-      description: row[row.length - 1],
+      description: hasAnnotationColumn ? row[row.length - 1] : '',
       inputEntries: getEntries(row.slice(0, headerLength - amountOutputs), 'InputEntry'),
       outputEntries: getEntries(row.slice(headerLength - amountOutputs, headerLength), 'OutputEntry')
     };

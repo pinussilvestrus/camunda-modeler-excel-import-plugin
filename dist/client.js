@@ -556,6 +556,15 @@ function ImportOverlay(props) {
       onChange: event => updateSheet(idx, 'amountOutputs', event.target.value)
     })), /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
       className: "form-group"
+    }, /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement("label", null, "Has annotation column?"), /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement("input", {
+      type: "checkbox",
+      id: 'hasAnnotationColumn-' + idx,
+      className: "form-control",
+      name: 'hasAnnotationColumn-' + idx,
+      value: getSheet(idx, 'hasAnnotationColumn'),
+      onChange: event => updateSheet(idx, 'hasAnnotationColumn', event.target.checked)
+    })), /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+      className: "form-group"
     }, /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement("label", null, "Hit Policy"), /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement("select", {
       id: 'hitPolicy-' + idx,
       className: "form-control",
@@ -1028,7 +1037,8 @@ const parseDmnContent = ({
       aggregation,
       amountOutputs,
       tableName,
-      hitPolicy
+      hitPolicy,
+      hasAnnotationColumn
     } = sheetOptions;
     const rawInputData = header.slice(0, header.length - amountOutputs);
     const rawOutputData = header.slice(header.length - amountOutputs);
@@ -1044,8 +1054,8 @@ const parseDmnContent = ({
       hitPolicy,
       aggregation,
       inputs: getInputs(rawInputData, typeRefs),
-      outputs: getOutputs(rawOutputData, typeRefs),
-      rules: getRules(safeRuleRows, amountOutputs, header.length)
+      outputs: getOutputs(rawOutputData, typeRefs.slice(header.length - amountOutputs)),
+      rules: getRules(safeRuleRows, amountOutputs, header.length, hasAnnotationColumn)
     });
   });
 };
@@ -1067,14 +1077,14 @@ const getInputs = (inputArray = [], typeRefs) => {
 };
 
 const getOutputs = (outputArray = [], typeRefs, amountOutputs) => {
-  return outputArray.map((text, index) => (0,_domain_output__WEBPACK_IMPORTED_MODULE_4__["default"])((0,_util__WEBPACK_IMPORTED_MODULE_7__.nextId)('Output_'), text, text, typeRefs[typeRefs.length - outputArray.length + index]));
+  return outputArray.map((text, index) => (0,_domain_output__WEBPACK_IMPORTED_MODULE_4__["default"])((0,_util__WEBPACK_IMPORTED_MODULE_7__.nextId)('Output_'), text, text, typeRefs[index]));
 };
 
-const getRules = (rows = [], amountOutputs, headerLength) => {
+const getRules = (rows = [], amountOutputs, headerLength, hasAnnotationColumn) => {
   return rows.map(row => {
     const ruleData = {
       id: (0,_util__WEBPACK_IMPORTED_MODULE_7__.nextId)('Rule_'),
-      description: row[row.length - 1],
+      description: hasAnnotationColumn ? row[row.length - 1] : '',
       inputEntries: getEntries(row.slice(0, headerLength - amountOutputs), 'InputEntry'),
       outputEntries: getEntries(row.slice(headerLength - amountOutputs, headerLength), 'OutputEntry')
     };
