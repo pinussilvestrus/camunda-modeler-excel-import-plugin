@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 * ...
 
+## 1.4.1
+
+* `FIX`: add option to configure annotation column ([#109](https://github.com/pinussilvestrus/camunda-modeler-excel-import-plugin/pull/109))
+
 ## 1.4.0
 
 * `FEAT`: add C8 DMN support ([#107](https://github.com/pinussilvestrus/camunda-modeler-excel-import-plugin/issues/107))
