@@ -35,6 +35,7 @@ const path = __webpack_require__(/*! path */ "./node_modules/path-browserify/ind
 
 const defaultState = {
   activeTab: {},
+  modalOpen: false,
   configOpen: false,
   inputFile: '',
   sheets: [],
@@ -66,10 +67,20 @@ class ExcelPlugin extends camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED
     subscribe('app.activeTabChanged', ({
       activeTab
     }) => {
-      this.setState({
-        activeTab
+      this.setState(currentState => {
+        const currentTab = currentState.activeTab || {};
+        const nextTab = activeTab || {};
+        if (currentTab.id === nextTab.id && currentTab.type === nextTab.type) {
+          return null;
+        }
+        return {
+          activeTab: nextTab
+        };
       });
     });
+  }
+  shouldComponentUpdate(nextProps, nextState) {
+    return nextState.modalOpen !== this.state.modalOpen || nextState.activeTab !== this.state.activeTab;
   }
   handleImportError(error) {
     const {

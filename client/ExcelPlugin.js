@@ -27,6 +27,7 @@ const path = require('path');
 
 const defaultState = {
   activeTab: {},
+  modalOpen: false,
   configOpen: false,
   inputFile: '',
   sheets: [],
@@ -67,8 +68,22 @@ export default class ExcelPlugin extends PureComponent {
     });
 
     subscribe('app.activeTabChanged', ({ activeTab }) => {
-      this.setState({ activeTab });
+      this.setState((currentState) => {
+        const currentTab = currentState.activeTab || {};
+        const nextTab = activeTab || {};
+
+        if (currentTab.id === nextTab.id && currentTab.type === nextTab.type) {
+          return null;
+        }
+
+        return { activeTab: nextTab };
+      });
     });
+  }
+
+  shouldComponentUpdate(nextProps, nextState) {
+    return nextState.modalOpen !== this.state.modalOpen ||
+      nextState.activeTab !== this.state.activeTab;
   }
 
   handleImportError(error) {
