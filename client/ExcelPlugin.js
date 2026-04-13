@@ -23,6 +23,8 @@ import {
   parseDmn
 } from '../converter';
 
+const path = require('path');
+
 const defaultState = {
   activeTab: {},
   configOpen: false,
@@ -122,43 +124,27 @@ export default class ExcelPlugin extends PureComponent {
     });
   }
 
-  async handleFileImportSuccess(xml, isMulti = false) {
+  async handleFileImportSuccess(xml, inputPath) {
     const {
+      _getGlobal,
       triggerAction,
-      subscribe
     } = this.props;
 
-    let tab;
+    const fileSystem = _getGlobal('fileSystem');
+    const importPath = createImportedDiagramPath(inputPath);
 
-    const hook = subscribe('dmn.modeler.created', (event) => {
-
-      const { modeler } = event;
-
-      modeler.once('import.parse.start', 5000, function() {
-        return xml;
-      });
-
-      // make tab dirty after import finished
-      modeler.once('import.done', function() {
-        const drdView = modeler._views.find(({ type }) => type === 'drd');
-
-        if (isMulti && drdView) {
-          modeler.open(drdView);
-        }
-
-        const commandStack = modeler.getActiveViewer().get('commandStack');
-
-        setTimeout(function() {
-          commandStack.registerHandler('excel.foo', NoopHandler);
-          commandStack.execute('excel.foo');
-        }, 300);
-      });
+    await fileSystem.writeFile(importPath, {
+      path: importPath,
+      name: path.basename(importPath),
+      contents: xml
+    }, {
+      encoding: ENCODING_UTF8,
+      fileType: 'dmn'
     });
 
-    tab = await triggerAction('create-dmn-diagram');
+    await triggerAction('open-diagram', { path: importPath });
 
-    // cancel subscription after tab is created
-    hook.cancel();
+    return importPath;
   }
 
   /** @deprecated */
@@ -235,8 +221,6 @@ export default class ExcelPlugin extends PureComponent {
         contents
       } = excelSheet;
 
-      const isMulti = await isMultiSheet(contents);
-
       // (2) convert to DMN 1.3
       // const xml2 = await this.convertXlsxFromApi(options);
       const xml = await this.convertXlsx({
@@ -246,7 +230,7 @@ export default class ExcelPlugin extends PureComponent {
       });
 
       // (3) open and save generated DMN 1.3 file
-      return await this.handleFileImportSuccess(xml, isMulti);
+      return await this.handleFileImportSuccess(xml, inputFile.path);
 
     } catch (error) {
       this.handleImportError(error);
@@ -427,27 +411,17 @@ const createOutputPath = (details) => {
   return details.outputDirectory + details.tableName + '.dmn';
 };
 
+const createImportedDiagramPath = (inputPath) => {
+  const directory = path.dirname(inputPath);
+  const baseName = path.basename(inputPath, path.extname(inputPath));
+
+  return path.join(directory, `${baseName}.imported.${Date.now()}.dmn`);
+};
+
 const toHitPolicy = (rawValue) => {
   return HIT_POLICIES[rawValue];
 };
 
-const NoopHandler = function() {
-
-  this.execute = function(ctx) {
-
-  };
-
-  this.revert = function(ctx) {
-
-  };
-};
-
 const isDMN = (tab) => {
   return tab.type === 'dmn' || tab.type === 'cloud-dmn';
-};
-
-const isMultiSheet = async (contents) => {
-  const dmnContents = await parseDmn({ buffer: contents });
-
-  return dmnContents && dmnContents.length > 1;
 };

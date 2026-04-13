@@ -16,6 +16,20 @@ const name = 'DRD';
 
 const namespace = 'http://camunda.org/schema/1.0/dmn';
 
+const DECISION_SHAPE_WIDTH = 180;
+
+const DECISION_SHAPE_HEIGHT = 80;
+
+const DECISION_SHAPE_START_X = 160;
+
+const DECISION_SHAPE_START_Y = 120;
+
+const DECISION_SHAPE_X_OFFSET = 240;
+
+const DECISION_SHAPE_Y_OFFSET = 140;
+
+const DECISIONS_PER_ROW = 4;
+
 
 // API //////////////////////////
 
@@ -25,6 +39,7 @@ const namespace = 'http://camunda.org/schema/1.0/dmn';
  */
 export const buildXmlFromDmnContent = (dmnContents) => {
   let base = generateBaseNodes();
+  const decisions = [];
 
   dmnContents.forEach(sheet => {
     const {
@@ -55,14 +70,24 @@ export const buildXmlFromDmnContent = (dmnContents) => {
     }
 
     // (2) add to definitions
+    const decisionId = nextId('Decision_');
+
     const decision = {
-      '@id': nextId('Decision_'),
+      '@id': decisionId,
       '@name': name,
       decisionTable
     };
 
+    decisions.push({
+      id: decisionId
+    });
+
     base.ele({ decision });
   });
+
+  if (decisions.length) {
+    base.ele(generateDmndiNode(decisions));
+  }
 
   return base.end({ pretty: true });
 };
@@ -129,4 +154,29 @@ const generateOutputNodes = (outputs = []) => {
       '@typeRef': output.typeRef
     };
   });
+};
+
+const generateDmndiNode = (decisions) => {
+  return {
+    'dmndi:DMNDI': {
+      'dmndi:DMNDiagram': {
+        '@id': nextId('DMNDiagram_'),
+        'dmndi:DMNShape': decisions.map((decision, index) => {
+          const row = Math.floor(index / DECISIONS_PER_ROW);
+          const col = index % DECISIONS_PER_ROW;
+
+          return {
+            '@id': nextId('DMNShape_'),
+            '@dmnElementRef': decision.id,
+            'dc:Bounds': {
+              '@height': DECISION_SHAPE_HEIGHT,
+              '@width': DECISION_SHAPE_WIDTH,
+              '@x': DECISION_SHAPE_START_X + col * DECISION_SHAPE_X_OFFSET,
+              '@y': DECISION_SHAPE_START_Y + row * DECISION_SHAPE_Y_OFFSET
+            }
+          };
+        })
+      }
+    }
+  };
 };
