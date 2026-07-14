@@ -29,7 +29,7 @@
   "dependencies": {
     "dmn-moddle": "^10.0.0",
     "ids": "^1.0.5",
-    "node-xlsx": "0.23.0",
+    "node-xlsx": "0.24.0",
     "xmlbuilder": "^15.1.1"
   },
   "devDependencies": {
