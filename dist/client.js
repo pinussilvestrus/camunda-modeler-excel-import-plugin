@@ -24,6 +24,8 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _converter__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ../converter */ "./converter/index.js");
 /* eslint-disable no-unused-vars*/
 
+const path = __webpack_require__(/*! path */ "./node_modules/path-browserify/index.js");
+
 
 
 
@@ -33,6 +35,7 @@ __webpack_require__.r(__webpack_exports__);
 
 const defaultState = {
   activeTab: {},
+  modalOpen: false,
   configOpen: false,
   inputFile: '',
   sheets: [],
@@ -64,10 +67,20 @@ class ExcelPlugin extends camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED
     subscribe('app.activeTabChanged', ({
       activeTab
     }) => {
-      this.setState({
-        activeTab
+      this.setState(currentState => {
+        const currentTab = currentState.activeTab || {};
+        const nextTab = activeTab || {};
+        if (currentTab.id === nextTab.id && currentTab.type === nextTab.type) {
+          return null;
+        }
+        return {
+          activeTab: nextTab
+        };
       });
     });
+  }
+  shouldComponentUpdate(nextProps, nextState) {
+    return nextState.modalOpen !== this.state.modalOpen || nextState.activeTab !== this.state.activeTab;
   }
   handleImportError(error) {
     const {
@@ -115,39 +128,25 @@ class ExcelPlugin extends camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED
       duration: 10000
     });
   }
-  async handleFileImportSuccess(xml, isMulti = false) {
+  async handleFileImportSuccess(xml, inputPath) {
     const {
+      _getGlobal,
       triggerAction,
-      subscribe
     } = this.props;
-    let tab;
-    const hook = subscribe('dmn.modeler.created', event => {
-      const {
-        modeler
-      } = event;
-      modeler.once('import.parse.start', 5000, function () {
-        return xml;
-      });
-
-      // make tab dirty after import finished
-      modeler.once('import.done', function () {
-        const drdView = modeler._views.find(({
-          type
-        }) => type === 'drd');
-        if (isMulti && drdView) {
-          modeler.open(drdView);
-        }
-        const commandStack = modeler.getActiveViewer().get('commandStack');
-        setTimeout(function () {
-          commandStack.registerHandler('excel.foo', NoopHandler);
-          commandStack.execute('excel.foo');
-        }, 300);
-      });
+    const fileSystem = _getGlobal('fileSystem');
+    const importPath = createImportedDiagramPath(inputPath);
+    await fileSystem.writeFile(importPath, {
+      path: importPath,
+      name: path.basename(importPath),
+      contents: xml
+    }, {
+      encoding: ENCODING_UTF8,
+      fileType: 'dmn'
     });
-    tab = await triggerAction('create-dmn-diagram');
-
-    // cancel subscription after tab is created
-    hook.cancel();
+    await triggerAction('open-diagram', {
+      path: importPath
+    });
+    return importPath;
   }
 
   /** @deprecated */
@@ -208,7 +207,6 @@ class ExcelPlugin extends camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED
       const {
         contents
       } = excelSheet;
-      const isMulti = await isMultiSheet(contents);
 
       // (2) convert to DMN 1.3
       // const xml2 = await this.convertXlsxFromApi(options);
@@ -219,7 +217,7 @@ class ExcelPlugin extends camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED
       });
 
       // (3) open and save generated DMN 1.3 file
-      return await this.handleFileImportSuccess(xml, isMulti);
+      return await this.handleFileImportSuccess(xml, inputFile.path);
     } catch (error) {
       this.handleImportError(error);
     }
@@ -319,7 +317,7 @@ class ExcelPlugin extends camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED
       tableName,
       hitPolicy
     };
-    return /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement(camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement(camunda_modeler_plugin_helpers_components__WEBPACK_IMPORTED_MODULE_1__.Fill, {
+    return /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement(camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, isDMN(activeTab) && /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement(camunda_modeler_plugin_helpers_components__WEBPACK_IMPORTED_MODULE_1__.Fill, {
       slot: "tab-actions",
       group: "xx_excel"
     }, /*#__PURE__*/camunda_modeler_plugin_helpers_react__WEBPACK_IMPORTED_MODULE_0___default().createElement("button", {
@@ -365,21 +363,16 @@ const createImportRequestBody = details => {
 const createOutputPath = details => {
   return details.outputDirectory + details.tableName + '.dmn';
 };
+const createImportedDiagramPath = inputPath => {
+  const directory = path.dirname(inputPath);
+  const baseName = path.basename(inputPath, path.extname(inputPath));
+  return path.join(directory, `${baseName}.imported.${Date.now()}.dmn`);
+};
 const toHitPolicy = rawValue => {
   return _helper_hitPolicies__WEBPACK_IMPORTED_MODULE_6__["default"][rawValue];
 };
-const NoopHandler = function () {
-  this.execute = function (ctx) {};
-  this.revert = function (ctx) {};
-};
 const isDMN = tab => {
   return tab.type === 'dmn' || tab.type === 'cloud-dmn';
-};
-const isMultiSheet = async contents => {
-  const dmnContents = await (0,_converter__WEBPACK_IMPORTED_MODULE_7__.parseDmn)({
-    buffer: contents
-  });
-  return dmnContents && dmnContents.length > 1;
 };
 
 /***/ }),
@@ -703,6 +696,13 @@ const xmlnsDc = 'http://www.omg.org/spec/DMN/20180521/DC/';
 const id = 'AutoGeneratedDmn';
 const name = 'DRD';
 const namespace = 'http://camunda.org/schema/1.0/dmn';
+const DECISION_SHAPE_WIDTH = 180;
+const DECISION_SHAPE_HEIGHT = 80;
+const DECISION_SHAPE_START_X = 160;
+const DECISION_SHAPE_START_Y = 120;
+const DECISION_SHAPE_X_OFFSET = 240;
+const DECISION_SHAPE_Y_OFFSET = 140;
+const DECISIONS_PER_ROW = 4;
 
 // API //////////////////////////
 
@@ -712,6 +712,7 @@ const namespace = 'http://camunda.org/schema/1.0/dmn';
  */
 const buildXmlFromDmnContent = dmnContents => {
   let base = generateBaseNodes();
+  const decisions = [];
   dmnContents.forEach(sheet => {
     const {
       name,
@@ -740,15 +741,24 @@ const buildXmlFromDmnContent = dmnContents => {
     }
 
     // (2) add to definitions
+    const decisionId = (0,_util__WEBPACK_IMPORTED_MODULE_1__.nextId)('Decision_');
     const decision = {
-      '@id': (0,_util__WEBPACK_IMPORTED_MODULE_1__.nextId)('Decision_'),
+      '@id': decisionId,
       '@name': name,
       decisionTable
     };
+    decisions.push({
+      id: decisionId
+    });
     base.ele({
       decision
     });
   });
+
+  if (decisions.length) {
+    base.ele(generateDmndiNode(decisions));
+  }
+
   return base.end({
     pretty: true
   });
@@ -812,6 +822,29 @@ const generateOutputNodes = (outputs = []) => {
       '@typeRef': output.typeRef
     };
   });
+};
+const generateDmndiNode = decisions => {
+  return {
+    'dmndi:DMNDI': {
+      'dmndi:DMNDiagram': {
+        '@id': (0,_util__WEBPACK_IMPORTED_MODULE_1__.nextId)('DMNDiagram_'),
+        'dmndi:DMNShape': decisions.map((decision, index) => {
+          const row = Math.floor(index / DECISIONS_PER_ROW);
+          const col = index % DECISIONS_PER_ROW;
+          return {
+            '@id': (0,_util__WEBPACK_IMPORTED_MODULE_1__.nextId)('DMNShape_'),
+            '@dmnElementRef': decision.id,
+            'dc:Bounds': {
+              '@height': DECISION_SHAPE_HEIGHT,
+              '@width': DECISION_SHAPE_WIDTH,
+              '@x': DECISION_SHAPE_START_X + col * DECISION_SHAPE_X_OFFSET,
+              '@y': DECISION_SHAPE_START_Y + row * DECISION_SHAPE_Y_OFFSET
+            }
+          };
+        })
+      }
+    }
+  };
 };
 
 /***/ }),
